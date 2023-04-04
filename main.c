@@ -56,6 +56,7 @@ typedef struct {
     GameBoard board;
     Ship ships[NUM_SHIPS];
     int ships_remaining;
+    int is_turn;
 } Player;
 
 // Structure for game textures
@@ -240,6 +241,32 @@ void initialize_game_board(GameBoard* board) {
     }//end for
 }//end initialize_game_board
 
+int handle_events(SDL_Event* event, Player* player1, Player* player2) {
+    while (SDL_PollEvent(event)) {
+        if (event->type == SDL_QUIT) {
+            return 0;
+        } else if (event->type == SDL_MOUSEBUTTONDOWN) {
+            int x = event->button.x / CELL_SIZE;
+            int y = event->button.y / CELL_SIZE;
+
+            Player* current_player = player1->is_turn ? player1 : player2;
+            Player* opponent = player1->is_turn ? player2 : player1;
+
+            MoveResult result = handle_player_move(opponent, x, y);
+            if (result != MOVE_RESULT_MISS) {
+                if (opponent->ships_remaining == 0) {
+                    printf("Player %d wins!\n", player1->is_turn ? 1 : 2);
+                    return 0;
+                }//end if
+            } else {
+                player1->is_turn = !player1->is_turn;
+                player2->is_turn = !player2->is_turn;
+            }//end else
+        }//end else if
+    }//end while
+    return 1;
+}//end handle_events
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -275,7 +302,36 @@ int main() {
     GameBoard board;
     initialize_game_board(&board);
 
-    //Main game loop and other game logic will go here
+    //Main game loop and other game logic
+
+    // Initialize players
+    Player player1;
+    Player player2;
+    initialize_game_board(&player1.board);
+    initialize_game_board(&player2.board);
+    player1.is_turn = 1;
+    player2.is_turn = 0;
+
+    int running = 1;
+    SDL_Event event;
+
+    while (running) {
+        running = handle_events(&event, &player1, &player2);
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        // Render the board
+        Player* current_player = player1.is_turn ? &player1 : &player2;
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                render_cell(renderer, &current_player->board.cells[i][j], textures);
+            }//end for
+        }//end for
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
+    }//end while
 
     // Cleanup
     free(textures);
