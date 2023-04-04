@@ -332,6 +332,12 @@ void render_text(SDL_Renderer* renderer, const char* text, int x, int y) {
     SDL_FreeSurface(text_surface);
 }//end render_text
 
+// Helper function to check if the mouse is inside a button
+int is_mouse_inside_button(int x, int y, SDL_Rect button_rect) {
+    return x >= button_rect.x && x <= button_rect.x + button_rect.w &&
+           y >= button_rect.y && y <= button_rect.y + button_rect.h;
+}//end is_mouse_inside_button
+
 // Create a main menu
 typedef enum {
     MAIN_MENU_NEW_GAME,
@@ -362,19 +368,31 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
 
     int running = 1;
     int frame_counter = 0;
+    int hover_button = -1;
+
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = 0;
                 break;
+            } else if (event.type == SDL_MOUSEMOTION) {
+                int x = event.motion.x;
+                int y = event.motion.y;
+
+                hover_button = -1;
+                for (int i = 0; i < 3; i++) {
+                    if (is_mouse_inside_button(x, y, button_rects[i])) {
+                        hover_button = i;
+                        break;
+                    }//end if
+                }//end for
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int x = event.button.x;
                 int y = event.button.y;
 
                 for (int i = 0; i < 3; i++) {
-                    if (x >= button_rects[i].x && x <= button_rects[i].x + button_rects[i].w &&
-                        y >= button_rects[i].y && y <= button_rects[i].y + button_rects[i].h) {
+                    if (is_mouse_inside_button(x, y, button_rects[i])) {
                         selected_option = (MainMenuOption)i;
                         running = 0;
                         break;
@@ -391,7 +409,11 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
 
         for (int i = 0; i < 3; i++) {
             // Render button background
-            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+            if (hover_button == i) {
+                SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray
+            } else {
+                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
+            }//end else
             SDL_RenderFillRect(renderer, &button_rects[i]);
 
             // Render button shadow
@@ -402,7 +424,7 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
             SDL_RenderFillRect(renderer, &shadow_rect);
 
             // Render button label
-            render_text(renderer, button_labels[i], button_rects[i].x + 45, button_rects[i].y + 8);
+            render_text(renderer, button_labels[i], button_rects[i].x + 24, button_rects[i].y + 8);
         }//end for
 
         SDL_RenderPresent(renderer);
