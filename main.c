@@ -10,6 +10,9 @@
 #define NUM_SHIPS 5
 #define CELL_SIZE 32
 
+TTF_Font* font = NULL;
+int font_size = 24;
+
 // Structure for cell states
 typedef enum {
     CELL_STATE_EMPTY,
@@ -22,7 +25,7 @@ typedef enum {
     CELL_STATE_MISS
 } CellState;
 
-// Structure for the game board
+// Structures for the game board
 typedef struct {
     int x;
     int y;
@@ -38,7 +41,7 @@ typedef struct {
     Cell cells[BOARD_SIZE][BOARD_SIZE];
 } GameBoard;
 
-// Structure for the ships
+// Structures for the ships
 typedef enum {
     CARRIER = 5,
     BATTLESHIP = 4,
@@ -112,7 +115,6 @@ MoveResult handle_player_move(Player* opponent, int x, int y) {
 
 SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer);
 
-// Functions to load and render textures
 GameTextures* load_game_textures(SDL_Renderer* renderer) {
     GameTextures* textures = (GameTextures*)malloc(sizeof(GameTextures));
     if (textures == NULL) {
@@ -120,14 +122,14 @@ GameTextures* load_game_textures(SDL_Renderer* renderer) {
         return NULL;
     }//end if
 
-    textures->ocean = load_texture("ocean.png", renderer);
-    textures->ship_left = load_texture("ship_left.png", renderer);
-    textures->ship_middle = load_texture("ship_middle.png", renderer);
-    textures->ship_right = load_texture("ship_right.png", renderer);
-    textures->hit_enemy_ship = load_texture("hit_enemy_ship.png", renderer);
-    textures->hit_own_ship = load_texture("hit_own_ship.png", renderer);
-    textures->hit_ocean = load_texture("hit_ocean.png", renderer);
-    textures->miss = load_texture("miss.png", renderer);
+    textures->ocean = load_texture("Assets/ocean.png", renderer);
+    textures->ship_left = load_texture("Assets/ship_left.png", renderer);
+    textures->ship_middle = load_texture("Assets/ship_middle.png", renderer);
+    textures->ship_right = load_texture("Assets/ship_right.png", renderer);
+    textures->hit_enemy_ship = load_texture("Assets/hit_enemy_ship.png", renderer);
+    textures->hit_own_ship = load_texture("Assets/hit_own_ship.png", renderer);
+    textures->hit_ocean = load_texture("Assets/hit_ocean.png", renderer);
+    textures->miss = load_texture("Assets/miss.png", renderer);
 
     return textures;
 }//end load_game_textures
@@ -382,32 +384,32 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
-        return 1;
+        return -1;
     }//end if
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
         printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
-        return 1;
+        return -1;
     }//end if
 
     // Create an SDL window and renderer
     SDL_Window* window = SDL_CreateWindow("Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, BOARD_SIZE * CELL_SIZE, BOARD_SIZE * CELL_SIZE, SDL_WINDOW_SHOWN);
     if (window == NULL) {
         printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
-        return 1;
+        return -1;
     }//end if
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-        return 1;
+        return -1;
     }//end if
 
     // Load game textures
     GameTextures* textures = load_game_textures(renderer);
     if (textures == NULL) {
         printf("Failed to load game textures.\n");
-        return 1;
+        return -1;
     }//end if
 
     // Initialize SDL_ttf
@@ -416,7 +418,7 @@ int main() {
         exit(2);
     }//end if
 
-    TTF_Font* font = TTF_OpenFont("cambria.ttc", font_size);
+    font = TTF_OpenFont("Assets/Fonts/cambria.ttf", font_size);
     if (font == NULL) {
         printf("TTF_OpenFont: %s\n", TTF_GetError());
         exit(2);
@@ -431,9 +433,11 @@ int main() {
         SDL_DestroyWindow(window);
         IMG_Quit();
         SDL_Quit();
+        TTF_CloseFont(font);
+        TTF_Quit();
         return 0;
     } else if (menu_option == MAIN_MENU_LOAD) {
-        // Load a saved game (not implemented)
+        // Load a saved game (not yet implemented)
     } else if (menu_option == MAIN_MENU_NEW_GAME) {
         // Start a new game
     }//end else if
@@ -455,7 +459,7 @@ int main() {
     SDL_Thread* input_thread = SDL_CreateThread(input_thread_function, "InputThread", (void*)players);
     if (input_thread == NULL) {
         printf("Failed to create input thread. SDL Error: %s\n", SDL_GetError());
-        return 1;
+        return -1;
     }//end if
 
     int running = 1;

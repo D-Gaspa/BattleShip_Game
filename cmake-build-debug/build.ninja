@@ -52,7 +52,7 @@ build cmake_object_order_depends_target_BattleShip_Game: phony || CMakeFiles/Bat
 build CMakeFiles/BattleShip_Game.dir/main.c.obj: C_COMPILER__BattleShip_Game_Debug C$:/Users/diego/CLionProjects/BattleShip_Game/main.c || cmake_object_order_depends_target_BattleShip_Game
   DEP_FILE = CMakeFiles\BattleShip_Game.dir\main.c.obj.d
   FLAGS = -g -fdiagnostics-color=always -std=gnu11
-  INCLUDES = -IC:/SDL2-mingw/x86_64-w64-mingw32/include/SDL2 -IC:/Users/diego/CLionProjects/BattleShip_Game/include
+  INCLUDES = -IC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2/include -IC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_image/x86_64-w64-mingw32/include/SDL2 -IC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_ttf/x86_64-w64-mingw32/include/SDL2 -IC:/Users/diego/CLionProjects/BattleShip_Game/include
   OBJECT_DIR = CMakeFiles\BattleShip_Game.dir
   OBJECT_FILE_DIR = CMakeFiles\BattleShip_Game.dir
 
@@ -62,15 +62,16 @@ build CMakeFiles/BattleShip_Game.dir/main.c.obj: C_COMPILER__BattleShip_Game_Deb
 
 
 #############################################
-# Link the executable BattleShip_Game.exe
+# Link the executable C:\Users\diego\CLionProjects\BattleShip_Game\BattleShip_Game.exe
 
-build BattleShip_Game.exe: C_EXECUTABLE_LINKER__BattleShip_Game_Debug CMakeFiles/BattleShip_Game.dir/main.c.obj | C$:/SDL2_image/lib/x64/SDL2_image.lib C$:/SDL2-mingw/x86_64-w64-mingw32/lib/libSDL2.dll.a C$:/SDL2-mingw/x86_64-w64-mingw32/lib/libSDL2main.a
+build C$:/Users/diego/CLionProjects/BattleShip_Game/BattleShip_Game.exe: C_EXECUTABLE_LINKER__BattleShip_Game_Debug CMakeFiles/BattleShip_Game.dir/main.c.obj
   FLAGS = -g
-  LINK_LIBRARIES = C:/SDL2_image/lib/x64/SDL2_image.lib  C:/SDL2-mingw/x86_64-w64-mingw32/lib/libSDL2.dll.a  C:/SDL2-mingw/x86_64-w64-mingw32/lib/libSDL2main.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lSDL2_image  -lSDL2  -lSDL2main  -lSDL2_ttf  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_PATH = -LC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2/lib/x64   -LC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_image/x86_64-w64-mingw32/lib   -LC:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_ttf/x86_64-w64-mingw32/lib
   OBJECT_DIR = CMakeFiles\BattleShip_Game.dir
-  POST_BUILD = cd .
+  POST_BUILD = cmd.exe /C "cd /D C:\Users\diego\CLionProjects\BattleShip_Game\cmake-build-debug && C:\Users\diego\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8109.174\bin\cmake\win\x64\bin\cmake.exe -E copy_if_different C:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2/lib/x64/SDL2.dll C:/Users/diego/CLionProjects/BattleShip_Game && cd /D C:\Users\diego\CLionProjects\BattleShip_Game\cmake-build-debug && C:\Users\diego\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8109.174\bin\cmake\win\x64\bin\cmake.exe -E copy_if_different C:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_image/x86_64-w64-mingw32/bin/SDL2_image.dll C:/Users/diego/CLionProjects/BattleShip_Game && cd /D C:\Users\diego\CLionProjects\BattleShip_Game\cmake-build-debug && C:\Users\diego\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8109.174\bin\cmake\win\x64\bin\cmake.exe -E copy_if_different C:/Users/diego/CLionProjects/BattleShip_Game/SDL/SDL2_ttf/x86_64-w64-mingw32/bin/SDL2_ttf.dll C:/Users/diego/CLionProjects/BattleShip_Game"
   PRE_LINK = cd .
-  TARGET_FILE = BattleShip_Game.exe
+  TARGET_FILE = C:\Users\diego\CLionProjects\BattleShip_Game\BattleShip_Game.exe
   TARGET_IMPLIB = libBattleShip_Game.dll.a
   TARGET_PDB = BattleShip_Game.exe.dbg
 
@@ -100,7 +101,9 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
-build BattleShip_Game: phony BattleShip_Game.exe
+build BattleShip_Game: phony C$:/Users/diego/CLionProjects/BattleShip_Game/BattleShip_Game.exe
+
+build BattleShip_Game.exe: phony C$:/Users/diego/CLionProjects/BattleShip_Game/BattleShip_Game.exe
 
 # =============================================================================
 # Folder targets.
@@ -110,7 +113,7 @@ build BattleShip_Game: phony BattleShip_Game.exe
 #############################################
 # Folder: C:/Users/diego/CLionProjects/BattleShip_Game/cmake-build-debug
 
-build all: phony BattleShip_Game.exe
+build all: phony C$:/Users/diego/CLionProjects/BattleShip_Game/BattleShip_Game.exe
 
 # =============================================================================
 # Built-in targets
