@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL_image.h>
+#include <SDL_thread.h>
 
 #define BOARD_SIZE 10
 #define NUM_SHIPS 5
@@ -267,6 +268,19 @@ int handle_events(SDL_Event* event, Player* player1, Player* player2) {
     return 1;
 }//end handle_events
 
+int input_thread_function(void* data) {
+    SDL_Event event;
+    int running = 1;
+    Player* player1 = ((Player**)data)[0];
+    Player* player2 = ((Player**)data)[1];
+
+    while (running) {
+        running = handle_events(&event, player1, player2);
+    }//end while
+
+    return 0;
+}//end input_thread_function
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -302,8 +316,6 @@ int main() {
     GameBoard board;
     initialize_game_board(&board);
 
-    //Main game loop and other game logic
-
     // Initialize players
     Player player1;
     Player player2;
@@ -311,10 +323,19 @@ int main() {
     initialize_game_board(&player2.board);
     player1.is_turn = 1;
     player2.is_turn = 0;
+    Player* players[] = { &player1, &player2 };
+
+    // Create input thread
+    SDL_Thread* input_thread = SDL_CreateThread(input_thread_function, "InputThread", (void*)players);
+    if (input_thread == NULL) {
+        printf("Failed to create input thread. SDL Error: %s\n", SDL_GetError());
+        return 1;
+    }//end if
 
     int running = 1;
     SDL_Event event;
 
+    // Main game loop
     while (running) {
         running = handle_events(&event, &player1, &player2);
 
@@ -333,7 +354,11 @@ int main() {
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
     }//end while
 
-    // Cleanup
+    // Wait for input thread to finish
+    int thread_return_value;
+    SDL_WaitThread(input_thread, &thread_return_value);
+
+    // Cleanup and exit
     free(textures);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
