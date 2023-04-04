@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_thread.h>
 
@@ -281,6 +282,103 @@ int input_thread_function(void* data) {
     return 0;
 }//end input_thread_function
 
+void render_text(SDL_Renderer* renderer, const char* text, int x, int y) {
+    // Set the text color
+    SDL_Color color = {0, 0, 0, 255}; // Black
+
+    // Create a surface containing the rendered text
+    SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, color);
+    if (text_surface == NULL) {
+        printf("TTF_RenderText_Solid: %s\n", TTF_GetError());
+        exit(2);
+    }//end if
+
+    // Convert the surface to a texture
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+    if (text_texture == NULL) {
+        printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+        exit(2);
+    }//end if
+
+    // Set the position and size of the text
+    SDL_Rect text_rect;
+    text_rect.x = x;
+    text_rect.y = y;
+    text_rect.w = text_surface->w;
+    text_rect.h = text_surface->h;
+
+    // Render the text texture
+    SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
+
+    // Free resources
+    SDL_DestroyTexture(text_texture);
+    SDL_FreeSurface(text_surface);
+}//end render_text
+
+// Create a main menu
+typedef enum {
+    MAIN_MENU_EXIT,
+    MAIN_MENU_LOAD,
+    MAIN_MENU_NEW_GAME
+} MainMenuOption;
+
+MainMenuOption main_menu(SDL_Renderer* renderer) {
+    MainMenuOption selected_option = MAIN_MENU_EXIT;
+
+    // Create buttons and positions for the main menu
+    const char* button_labels[] = {"Exit", "Load", "Start New Game"};
+    SDL_Rect button_rects[3];
+    for (int i = 0; i < 3; i++) {
+        button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 50;
+        button_rects[i].y = 100 + i * 50;
+        button_rects[i].w = 100;
+        button_rects[i].h = 32;
+    }//end for
+
+    int running = 1;
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = 0;
+                break;
+            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int x = event.button.x;
+                int y = event.button.y;
+
+                for (int i = 0; i < 3; i++) {
+                    if (x >= button_rects[i].x && x <= button_rects[i].x + button_rects[i].w &&
+                        y >= button_rects[i].y && y <= button_rects[i].y + button_rects[i].h) {
+                        selected_option = (MainMenuOption)i;
+                        running = 0;
+                        break;
+                    } else {
+                        selected_option = MAIN_MENU_EXIT;
+                    }//end else
+                }//end for
+            }//end else if
+        }//end while
+
+        // Render the main menu
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        for (int i = 0; i < 3; i++) {
+            // Render button background
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+            SDL_RenderFillRect(renderer, &button_rects[i]);
+
+            // Render button label
+            render_text(renderer, button_labels[i], button_rects[i].x + 10, button_rects[i].y + 8);
+        }//end for
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
+    }//end while
+
+    return selected_option;
+}//end main_menu
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -311,6 +409,34 @@ int main() {
         printf("Failed to load game textures.\n");
         return 1;
     }//end if
+
+    // Initialize SDL_ttf
+    if (TTF_Init() == -1) {
+        printf("TTF_Init: %s\n", TTF_GetError());
+        exit(2);
+    }//end if
+
+    TTF_Font* font = TTF_OpenFont("cambria.ttc", font_size);
+    if (font == NULL) {
+        printf("TTF_OpenFont: %s\n", TTF_GetError());
+        exit(2);
+    }//end if
+
+    // Create main menu
+    MainMenuOption menu_option = main_menu(renderer);
+    if (menu_option == MAIN_MENU_EXIT) {
+        // Exit the game
+        free(textures);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 0;
+    } else if (menu_option == MAIN_MENU_LOAD) {
+        // Load a saved game (not implemented)
+    } else if (menu_option == MAIN_MENU_NEW_GAME) {
+        // Start a new game
+    }//end else if
 
     // Initialize game board
     GameBoard board;
@@ -364,5 +490,7 @@ int main() {
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();
+    TTF_CloseFont(font);
+    TTF_Quit();
     return 0;
 }//end main
