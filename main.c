@@ -16,9 +16,11 @@ int font_size = 24;
 // Structure for cell states
 typedef enum {
     CELL_STATE_EMPTY,
+    CELL_STATE_SHIP_BOTTOM,
     CELL_STATE_SHIP_LEFT,
     CELL_STATE_SHIP_MIDDLE,
     CELL_STATE_SHIP_RIGHT,
+    CELL_STATE_SHIP_TOP,
     CELL_STATE_HIT_ENEMY_SHIP,
     CELL_STATE_HIT_OWN_SHIP,
     CELL_STATE_HIT_OCEAN,
@@ -67,9 +69,11 @@ typedef struct {
 // Structure for game textures
 typedef struct {
     SDL_Texture* ocean;
+    SDL_Texture* ship_top;
     SDL_Texture* ship_left;
     SDL_Texture* ship_middle;
     SDL_Texture* ship_right;
+    SDL_Texture* ship_bottom;
     SDL_Texture* hit_enemy_ship;
     SDL_Texture* hit_own_ship;
     SDL_Texture* hit_ocean;
@@ -123,9 +127,11 @@ GameTextures* load_game_textures(SDL_Renderer* renderer) {
     }//end if
 
     textures->ocean = load_texture("Assets/ocean.png", renderer);
+    textures->ship_bottom = load_texture("Assets/ship_bottom.png", renderer);
     textures->ship_left = load_texture("Assets/ship_left.png", renderer);
     textures->ship_middle = load_texture("Assets/ship_middle.png", renderer);
     textures->ship_right = load_texture("Assets/ship_right.png", renderer);
+    textures->ship_top = load_texture("Assets/ship_top.png", renderer);
     textures->hit_enemy_ship = load_texture("Assets/hit_enemy_ship.png", renderer);
     textures->hit_own_ship = load_texture("Assets/hit_own_ship.png", renderer);
     textures->hit_ocean = load_texture("Assets/hit_ocean.png", renderer);
@@ -172,6 +178,9 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
         case CELL_STATE_EMPTY:
             texture = textures->ocean;
             break;
+        case CELL_STATE_SHIP_BOTTOM:
+            texture = textures->ship_bottom;
+            break;
         case CELL_STATE_SHIP_LEFT:
             texture = textures->ship_left;
             break;
@@ -180,6 +189,9 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
             break;
         case CELL_STATE_SHIP_RIGHT:
             texture = textures->ship_right;
+            break;
+        case CELL_STATE_SHIP_TOP:
+            texture = textures->ship_top;
             break;
         case CELL_STATE_HIT_ENEMY_SHIP:
             texture = textures->hit_enemy_ship;
@@ -199,48 +211,6 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
         SDL_RenderCopy(renderer, texture, NULL, &cell->rect);
     }//end if
 }//end render_cell
-
-int place_ship_on_board(Player* player, ShipType type, int x, int y, int orientation) {
-    int ship_size = (int)type;
-    int end_x = x + (orientation == 0 ? ship_size - 1 : 0);
-    int end_y = y + (orientation == 1 ? ship_size - 1 : 0);
-
-    // Check if the ship fits within the board
-    if (end_x >= BOARD_SIZE || end_y >= BOARD_SIZE) {
-        return 0; // Invalid position
-    }//end if
-
-    // Check if the ship overlaps with other ships
-    for (int i = x; i <= end_x; i++) {
-        for (int j = y; j <= end_y; j++) {
-            if (player->board.cells[i][j].occupied) {
-                return 0; // Invalid position
-            }//end if
-        }//end for
-    }//end for
-
-    // Place the ship on the board
-    for (int i = x; i <= end_x; i++) {
-        for (int j = y; j <= end_y; j++) {
-            player->board.cells[i][j].occupied = 1;
-            if (i == x) {
-                player->board.cells[i][j].state = CELL_STATE_SHIP_LEFT;
-            } else if (i == end_x) {
-                player->board.cells[i][j].state = CELL_STATE_SHIP_RIGHT;
-            } else {
-                player->board.cells[i][j].state = CELL_STATE_SHIP_MIDDLE;
-            }//end else
-        }//end for
-    }//end for
-
-    // Update ship information
-    Ship* ship = &player->ships[type];
-    ship->type = type;
-    ship->size = ship_size;
-    ship->hit_count = 0;
-
-    return 1; // Ship placed successfully
-}//end place_ship_on_board
 
 void initialize_game_board(GameBoard* board) {
     for (int i = 0; i < BOARD_SIZE; i++) {
@@ -441,6 +411,118 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
     return selected_option;
 }//end main_menu
 
+void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
+    // Initialize variables
+    int ship_selected = -1;
+    int orientation = 0; // 0 for horizontal, 1 for vertical
+    SDL_Rect orientation_button = { 650, 50, 150, 50 }; // x, y, width, height
+
+    // Add ship names
+    const char* ship_names[NUM_SHIPS] = {
+            "Carrier",
+            "Battleship",
+            "Destroyer",
+            "Submarine",
+            "Patrol Boat"
+    };
+
+    // Main loop for the selecting_screen
+    int running = 1;
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = 0;
+            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int x = event.button.x;
+                int y = event.button.y;
+
+                // Check if the user clicked on the orientation button
+                if (is_mouse_inside_button(x, y, orientation_button)) {
+                    orientation = (orientation + 1) % 2;
+                } else {
+                    // Check if the user clicked on a ship
+                    for (int i = 0; i < NUM_SHIPS; i++) {
+                        SDL_Rect ship_rect = {50, 50 + i * 50, 32 * (int) i, 32};
+                        if (is_mouse_inside_button(x, y, ship_rect)) {
+                            ship_selected = i;
+                            break;
+                        }//end if
+                    }//end for
+                }//end else
+            }//end else if
+        }//end while
+
+        // Clear screen
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+
+        // Render ships on the left side
+        for (int i = 0; i < NUM_SHIPS; i++) {
+            int ship_size = (int) i;
+            for (int j = 0; j < ship_size; j++) {
+                SDL_Rect ship_rect = {50 + j * CELL_SIZE, 50 + i * 50, CELL_SIZE, CELL_SIZE};
+                if (j == 0) {
+                    SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
+                } else if (j == ship_size - 1) {
+                    SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
+                } else {
+                    SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                }//end else
+            }//end for
+            // Render ship names
+            render_text(renderer, ship_names[i], 50, 90 + i * 50);
+        }//end for
+
+        // Render the orientation button
+        if (orientation == 0) {
+            render_text(renderer, "Orientation: Horizontal", orientation_button.x, orientation_button.y);
+        } else {
+            render_text(renderer, "Orientation: Vertical", orientation_button.x, orientation_button.y);
+        }//end else
+
+        // Render the grid on the right side
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                SDL_Rect grid_rect = {400 + i * CELL_SIZE, 50 + j * CELL_SIZE, CELL_SIZE, CELL_SIZE};
+                SDL_RenderCopy(renderer, textures->ocean, NULL, &grid_rect);
+                // Render grid lines
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
+                SDL_RenderDrawRect(renderer, &grid_rect);
+            }//end for
+        }//end for
+
+        // Render the selected ship (if any) at the mouse position
+        if (ship_selected != -1) {
+            int x, y;
+            SDL_GetMouseState(&x, &y);
+            int ship_size = (int) ship_selected;
+            for (int i = 0; i < ship_size; i++) {
+                SDL_Rect ship_rect = {x + i * CELL_SIZE, y, CELL_SIZE, CELL_SIZE};
+                if (orientation == 0) {
+                    if (i == 0) {
+                        SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
+                    } else if (i == ship_size - 1) {
+                        SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
+                    } else {
+                        SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                    }//end else
+                } else {
+                    if (i == 0) {
+                        SDL_RenderCopy(renderer, textures->ship_top, NULL, &ship_rect);
+                    } else if (i == ship_size - 1) {
+                        SDL_RenderCopy(renderer, textures->ship_bottom, NULL, &ship_rect);
+                    } else {
+                        SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                    }//end else
+                }//end else
+            }//end for
+        }//end if
+        // Render the screen
+        SDL_RenderPresent(renderer);
+    }//end while
+}//end selecting_screen
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -499,7 +581,7 @@ int main() {
     } else if (menu_option == MAIN_MENU_LOAD) {
         // Load a saved game (not yet implemented)
     } else if (menu_option == MAIN_MENU_NEW_GAME) {
-        // Start a new game
+        selecting_screen(renderer, textures);
     }//end else if
 
     // Initialize game board
