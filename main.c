@@ -150,6 +150,21 @@ SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer) {
     return texture;
 }//end load_texture
 
+// Load animated background textures
+SDL_Texture** load_animated_background(SDL_Renderer* renderer, const char* filepath, int num_frames) {
+    SDL_Texture** textures = (SDL_Texture**)malloc(sizeof(SDL_Texture*) * num_frames);
+    for (int i = 0; i < num_frames; i++) {
+        char filename[128];
+        snprintf(filename, sizeof(filename), "%s%d.png", filepath, i);
+        textures[i] = load_texture(filename, renderer);
+        if (textures[i] == NULL) {
+            printf("Failed to load background frame: %s\n", filename);
+            return NULL;
+        }//end if
+    }//end for
+    return textures;
+}//end load_animated_background
+
 void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* textures) {
     SDL_Texture* texture = NULL;
 
@@ -319,25 +334,34 @@ void render_text(SDL_Renderer* renderer, const char* text, int x, int y) {
 
 // Create a main menu
 typedef enum {
-    MAIN_MENU_EXIT,
+    MAIN_MENU_NEW_GAME,
     MAIN_MENU_LOAD,
-    MAIN_MENU_NEW_GAME
+    MAIN_MENU_EXIT
 } MainMenuOption;
 
 MainMenuOption main_menu(SDL_Renderer* renderer) {
     MainMenuOption selected_option = MAIN_MENU_EXIT;
 
+    // Load animated background textures
+    const int num_background_frames = 10;
+    SDL_Texture** background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_", num_background_frames);
+    if (background_frames == NULL) {
+        printf("Failed to load animated background.\n");
+        return MAIN_MENU_EXIT;
+    }//end if
+
     // Create buttons and positions for the main menu
-    const char* button_labels[] = {"Exit", "Load", "Start New Game"};
+    const char* button_labels[] = {"New Game", "Load", "Exit"};
     SDL_Rect button_rects[3];
     for (int i = 0; i < 3; i++) {
-        button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 50;
-        button_rects[i].y = 100 + i * 50;
-        button_rects[i].w = 100;
-        button_rects[i].h = 32;
+        button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 75;
+        button_rects[i].y = 150 + i * 60;
+        button_rects[i].w = 150;
+        button_rects[i].h = 40;
     }//end for
 
     int running = 1;
+    int frame_counter = 0;
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -361,22 +385,36 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
             }//end else if
         }//end while
 
-        // Render the main menu
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+        // Render the animated background
+        SDL_RenderCopy(renderer, background_frames[frame_counter], NULL, NULL);
+        frame_counter = (frame_counter + 1) % num_background_frames;
 
         for (int i = 0; i < 3; i++) {
             // Render button background
             SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
             SDL_RenderFillRect(renderer, &button_rects[i]);
 
+            // Render button shadow
+            SDL_Rect shadow_rect = button_rects[i];
+            shadow_rect.x += 4;
+            shadow_rect.y += 4;
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
+            SDL_RenderFillRect(renderer, &shadow_rect);
+
             // Render button label
-            render_text(renderer, button_labels[i], button_rects[i].x + 10, button_rects[i].y + 8);
+            render_text(renderer, button_labels[i], button_rects[i].x + 45, button_rects[i].y + 8);
         }//end for
 
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
     }//end while
+
+    // Free resources
+    // Free background frames
+    for (int i = 0; i < num_background_frames; i++) {
+        SDL_DestroyTexture(background_frames[i]);
+    }//end for
+    free(background_frames);
 
     return selected_option;
 }//end main_menu
@@ -418,7 +456,7 @@ int main() {
         exit(2);
     }//end if
 
-    font = TTF_OpenFont("Assets/Fonts/cambria.ttf", font_size);
+    font = TTF_OpenFont("Assets/Fonts/cambria.ttc", font_size);
     if (font == NULL) {
         printf("TTF_OpenFont: %s\n", TTF_GetError());
         exit(2);
