@@ -415,17 +415,16 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
     // Initialize variables
     int ship_selected = -1;
     int orientation = 0; // 0 for horizontal, 1 for vertical
-    SDL_Rect orientation_button = { 650, 50, 150, 50 }; // x, y, width, height
+    SDL_Rect orientation_button = { 50, 300, 150, 50 }; // x, y, width, height
+    SDL_Rect exit_button = { 0, 0, 100, 50 };
 
-    // Add ship names
-    const char* ship_names[NUM_SHIPS] = {
-            "Carrier",
-            "Battleship",
-            "Destroyer",
-            "Submarine",
-            "Patrol Boat"
+    Ship ships[NUM_SHIPS] = {
+            {CARRIER, CARRIER, 0},
+            {BATTLESHIP, BATTLESHIP, 0},
+            {DESTROYER, DESTROYER, 0},
+            {SUBMARINE, SUBMARINE, 0},
+            {PATROL_BOAT, PATROL_BOAT, 0}
     };
-
     // Main loop for the selecting_screen
     int running = 1;
     while (running) {
@@ -436,6 +435,11 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int x = event.button.x;
                 int y = event.button.y;
+
+                // Check if the user clicked on the exit button
+                if (is_mouse_inside_button(x, y, exit_button)) {
+                    running = 0;
+                }//end if
 
                 // Check if the user clicked on the orientation button
                 if (is_mouse_inside_button(x, y, orientation_button)) {
@@ -459,7 +463,7 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
 
         // Render ships on the left side
         for (int i = 0; i < NUM_SHIPS; i++) {
-            int ship_size = (int) i;
+            int ship_size = ships[i].size;
             for (int j = 0; j < ship_size; j++) {
                 SDL_Rect ship_rect = {50 + j * CELL_SIZE, 50 + i * 50, CELL_SIZE, CELL_SIZE};
                 if (j == 0) {
@@ -470,8 +474,6 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
                     SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
                 }//end else
             }//end for
-            // Render ship names
-            render_text(renderer, ship_names[i], 50, 90 + i * 50);
         }//end for
 
         // Render the orientation button
@@ -492,36 +494,17 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
             }//end for
         }//end for
 
-        // Render the selected ship (if any) at the mouse position
-        if (ship_selected != -1) {
-            int x, y;
-            SDL_GetMouseState(&x, &y);
-            int ship_size = (int) ship_selected;
-            for (int i = 0; i < ship_size; i++) {
-                SDL_Rect ship_rect = {x + i * CELL_SIZE, y, CELL_SIZE, CELL_SIZE};
-                if (orientation == 0) {
-                    if (i == 0) {
-                        SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
-                    } else if (i == ship_size - 1) {
-                        SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
-                    } else {
-                        SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
-                    }//end else
-                } else {
-                    if (i == 0) {
-                        SDL_RenderCopy(renderer, textures->ship_top, NULL, &ship_rect);
-                    } else if (i == ship_size - 1) {
-                        SDL_RenderCopy(renderer, textures->ship_bottom, NULL, &ship_rect);
-                    } else {
-                        SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
-                    }//end else
-                }//end else
-            }//end for
-        }//end if
+        //Render the exit button
+        render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
+
         // Render the screen
         SDL_RenderPresent(renderer);
     }//end while
 }//end selecting_screen
+
+void set_window_size(SDL_Window* window, int width, int height) {
+    SDL_SetWindowSize(window, width, height);
+}//end set_window_size
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -581,6 +564,7 @@ int main() {
     } else if (menu_option == MAIN_MENU_LOAD) {
         // Load a saved game (not yet implemented)
     } else if (menu_option == MAIN_MENU_NEW_GAME) {
+        set_window_size(window, 800, 500);
         selecting_screen(renderer, textures);
     }//end else if
 
