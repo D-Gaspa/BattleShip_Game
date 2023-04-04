@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <SDL_image.h>
 
-
 #define BOARD_SIZE 10
 #define NUM_SHIPS 5
 #define CELL_SIZE 32
@@ -70,6 +69,43 @@ typedef struct {
     SDL_Texture* hit_ocean;
     SDL_Texture* miss;
 } GameTextures;
+
+// Structure for move results
+typedef enum {
+    MOVE_RESULT_MISS,
+    MOVE_RESULT_HIT,
+    MOVE_RESULT_SUNK_SHIP
+} MoveResult;
+
+MoveResult handle_player_move(Player* opponent, int x, int y) {
+    Cell* cell = &opponent->board.cells[x][y];
+
+    if (cell->hit) {
+        return MOVE_RESULT_MISS;
+    }//end if
+
+    cell->hit = 1;
+    if (cell->occupied) {
+        for (int i = 0; i < NUM_SHIPS; i++) {
+            Ship* ship = &opponent->ships[i];
+            if (ship->type == cell->state - 1) {
+                ship->hit_count++;
+
+                if (ship->hit_count == ship->size) {
+                    opponent->ships_remaining--;
+                    cell->state = CELL_STATE_HIT_ENEMY_SHIP;
+                    return MOVE_RESULT_SUNK_SHIP;
+                }//end if
+            }//end if
+        }//end for
+
+        cell->state = CELL_STATE_HIT_OWN_SHIP;
+        return MOVE_RESULT_HIT;
+    } else {
+        cell->state = CELL_STATE_MISS;
+        return MOVE_RESULT_MISS;
+    }//end else
+}//end handle_player_move
 
 SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer);
 
@@ -143,6 +179,48 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
         SDL_RenderCopy(renderer, texture, NULL, &cell->rect);
     }//end if
 }//end render_cell
+
+int place_ship_on_board(Player* player, ShipType type, int x, int y, int orientation) {
+    int ship_size = (int)type;
+    int end_x = x + (orientation == 0 ? ship_size - 1 : 0);
+    int end_y = y + (orientation == 1 ? ship_size - 1 : 0);
+
+    // Check if the ship fits within the board
+    if (end_x >= BOARD_SIZE || end_y >= BOARD_SIZE) {
+        return 0; // Invalid position
+    }//end if
+
+    // Check if the ship overlaps with other ships
+    for (int i = x; i <= end_x; i++) {
+        for (int j = y; j <= end_y; j++) {
+            if (player->board.cells[i][j].occupied) {
+                return 0; // Invalid position
+            }//end if
+        }//end for
+    }//end for
+
+    // Place the ship on the board
+    for (int i = x; i <= end_x; i++) {
+        for (int j = y; j <= end_y; j++) {
+            player->board.cells[i][j].occupied = 1;
+            if (i == x) {
+                player->board.cells[i][j].state = CELL_STATE_SHIP_LEFT;
+            } else if (i == end_x) {
+                player->board.cells[i][j].state = CELL_STATE_SHIP_RIGHT;
+            } else {
+                player->board.cells[i][j].state = CELL_STATE_SHIP_MIDDLE;
+            }//end else
+        }//end for
+    }//end for
+
+    // Update ship information
+    Ship* ship = &player->ships[type];
+    ship->type = type;
+    ship->size = ship_size;
+    ship->hit_count = 0;
+
+    return 1; // Ship placed successfully
+}//end place_ship_on_board
 
 void initialize_game_board(GameBoard* board) {
     for (int i = 0; i < BOARD_SIZE; i++) {
