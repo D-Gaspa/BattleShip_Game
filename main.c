@@ -244,7 +244,6 @@ int handle_events(SDL_Event* event, Player* player1, Player* player2) {
             int x = event->button.x / CELL_SIZE;
             int y = event->button.y / CELL_SIZE;
 
-            Player* current_player = player1->is_turn ? player1 : player2;
             Player* opponent = player1->is_turn ? player2 : player1;
 
             MoveResult result = handle_player_move(opponent, x, y);
@@ -436,6 +435,7 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
             {SUBMARINE, SUBMARINE, 0},
             {PATROL_BOAT, PATROL_BOAT, 0}
     };
+
     // Main loop for the selecting_screen
     int running = 1;
     while (running) {
@@ -458,11 +458,14 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
                 } else {
                     // Check if the user clicked on a ship
                     for (int i = 0; i < NUM_SHIPS; i++) {
-                        SDL_Rect ship_rect = {50, 50 + i * 50, 32 * (int) i, 32};
-                        if (is_mouse_inside_button(x, y, ship_rect)) {
-                            ship_selected = i;
-                            break;
-                        }//end if
+                        int ship_size = ships[i].size;
+                        for (int j = 0; j < ship_size; j++) {
+                            SDL_Rect ship_rect = {50 + j * CELL_SIZE, 50 + i * 50, CELL_SIZE, CELL_SIZE};
+                            if (is_mouse_inside_button(x, y, ship_rect)) {
+                                ship_selected = i;
+                                break;
+                            }//end if
+                        }//end for
                     }//end for
                 }//end else
             } else if (event.type == SDL_MOUSEMOTION) {
@@ -501,6 +504,14 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
                     SDL_Rect selected_ship_rect = {50, 50 + i * 50, ships[i].size * CELL_SIZE, CELL_SIZE};
                     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
                     SDL_RenderDrawRect(renderer, &selected_ship_rect);
+                }//end if
+                // Add green border when hovering over a ship
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+                SDL_Rect hover_ship_rect = {50, 50 + i * 50, ships[i].size * CELL_SIZE, CELL_SIZE};
+                if (is_mouse_inside_button(x, y, hover_ship_rect)) {
+                    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
+                    SDL_RenderDrawRect(renderer, &hover_ship_rect);
                 }//end if
             }//end for
         }//end for
