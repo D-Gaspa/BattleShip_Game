@@ -494,62 +494,7 @@ void selecting_screen(SDL_Renderer *renderer, GameTextures *textures, Player *cu
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
                 SDL_RenderDrawRect(renderer, &grid_rect);
 
-                // Render the ship on the grid if the user is hovering over it
-                if (ship_selected >= 0 && grid_mouse_x >= 0 && grid_mouse_x < BOARD_SIZE &&
-                    grid_mouse_y >= 0 && grid_mouse_y < BOARD_SIZE) {
-                    int ship_size = ships[ship_selected].size;
-                    bool valid_position = true;
-
-                    for (int k = 0; k < ship_size; k++) {
-                        int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
-                        int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
-
-                        // Check if the ship is within the grid and not overlapping with another ship
-                        if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE &&
-                            current_player->board.cells[cell_y][cell_x].state == CELL_STATE_EMPTY) {
-                            SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE,
-                                                  CELL_SIZE};
-                            // Render ship texture based on the orientation
-                            if (orientation == 0) {
-                                SDL_RenderCopy(renderer, (i == 0 ? textures->ship_left :
-                                (i == ship_size - 1 ? textures->ship_right :
-                                textures->ship_middle)),NULL, &ship_rect);
-                            } else {
-                                // Rotate ship texture by 90 degrees for vertical orientation
-                                SDL_Texture *ship_texture;
-                                double rotation_angle = 90.0;
-                                if (i == 0) {
-                                    ship_texture = textures->ship_left;
-                                } else if (i == ship_size - 1) {
-                                    ship_texture = textures->ship_right;
-                                } else {
-                                    ship_texture = textures->ship_middle;
-                                }//end else
-                                SDL_RenderCopyEx(renderer, ship_texture, NULL, &ship_rect, rotation_angle, NULL,SDL_FLIP_NONE);
-                            }//end else
-                        } else {
-                            valid_position = false;
-                        }//end else
-                    }//end for
-
-                    // Render the ship on the grid if the position is valid
-                    if (valid_position) {
-                        for (int k = 0; k < ship_size; k++) {
-                            int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
-                            int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
-                            SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE,
-                                                  CELL_SIZE};
-                            if (k == 0) {
-                                SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
-                            } else if (k == ship_size - 1) {
-                                SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
-                            } else {
-                                SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
-                            }// end else
-                        }//end for
-                    }//end if
-                }//end if
-                // Render white border when hovering over cells with a ship selected
+                // Render ship on the grip and white border when hovering over cells with a ship selected taking into account the orientation
                 if (ship_selected >= 0) {
                     int ship_size = ships[ship_selected].size;
                     bool is_hovering = false;
@@ -563,10 +508,36 @@ void selecting_screen(SDL_Renderer *renderer, GameTextures *textures, Player *cu
                             break;
                         }//end if
                     }//end for
-
                     if (is_hovering) {
-                        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
-                        SDL_RenderDrawRect(renderer, &grid_rect);
+                        for (int k = 0; k < ship_size; k++) {
+                            int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
+                            int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
+
+                            // Rotate the ship if the orientation is vertical 90 degrees
+                            if (orientation == 1) {
+                                SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
+                                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                SDL_RenderDrawRect(renderer, &grid_rect);
+                                if (k == 0) {
+                                    SDL_RenderCopy(renderer, textures->ship_top, NULL, &ship_rect);
+                                } else if (k == ship_size - 1) {
+                                    SDL_RenderCopy(renderer, textures->ship_bottom, NULL, &ship_rect);
+                                } else {
+                                    SDL_RenderCopyEx(renderer, textures->ship_middle, NULL, &ship_rect, 90, NULL, SDL_FLIP_NONE);
+                                }//end else
+                            } else {
+                                SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
+                                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                SDL_RenderDrawRect(renderer, &grid_rect);
+                                if (k == 0) {
+                                    SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
+                                } else if (k == ship_size - 1) {
+                                    SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
+                                } else {
+                                    SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                                }//end else
+                            }//end else
+                        }//end for
                     }//end if
                 }//end if
             }//end for
