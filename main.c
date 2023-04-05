@@ -16,6 +16,7 @@ int font_size = 24;
 // Structure for cell states
 typedef enum {
     CELL_STATE_EMPTY,
+    CELL_STATE_EMPTY_SELECTION_MODE,
     CELL_STATE_SHIP_BOTTOM,
     CELL_STATE_SHIP_LEFT,
     CELL_STATE_SHIP_MIDDLE,
@@ -69,6 +70,7 @@ typedef struct {
 // Structure for game textures
 typedef struct {
     SDL_Texture* ocean;
+    SDL_Texture* ocean_selection_mode;
     SDL_Texture* ship_top;
     SDL_Texture* ship_left;
     SDL_Texture* ship_middle;
@@ -127,6 +129,7 @@ GameTextures* load_game_textures(SDL_Renderer* renderer) {
     }//end if
 
     textures->ocean = load_texture("Assets/ocean.png", renderer);
+    textures->ocean_selection_mode = load_texture("Assets/ocean_selection_mode.png", renderer);
     textures->ship_bottom = load_texture("Assets/ship_bottom.png", renderer);
     textures->ship_left = load_texture("Assets/ship_left.png", renderer);
     textures->ship_middle = load_texture("Assets/ship_middle.png", renderer);
@@ -177,6 +180,9 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
     switch (cell->state) {
         case CELL_STATE_EMPTY:
             texture = textures->ocean;
+            break;
+        case CELL_STATE_EMPTY_SELECTION_MODE:
+            texture = textures->ocean_selection_mode;
             break;
         case CELL_STATE_SHIP_BOTTOM:
             texture = textures->ship_bottom;
@@ -412,10 +418,15 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
 }//end main_menu
 
 void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
+    // Load background texture
+    SDL_Texture* background_texture = IMG_LoadTexture(renderer, "Assets/selecting_screen_background.jpg");
+
     // Initialize variables
     int ship_selected = -1;
     int orientation = 0; // 0 for horizontal, 1 for vertical
-    SDL_Rect orientation_button = { 50, 300, 150, 50 }; // x, y, width, height
+    int hover_orientation = 0;
+
+    SDL_Rect orientation_button = { 50, 300, 275, 50 }; // x, y, width, height
     SDL_Rect exit_button = { 0, 0, 100, 50 };
 
     Ship ships[NUM_SHIPS] = {
@@ -454,12 +465,25 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
                         }//end if
                     }//end for
                 }//end else
+            } else if (event.type == SDL_MOUSEMOTION) {
+                int x = event.motion.x;
+                int y = event.motion.y;
+
+                // Check if the user is hovering over the orientation button
+                if (is_mouse_inside_button(x, y, orientation_button)) {
+                    hover_orientation = 1;
+                } else {
+                    hover_orientation = 0;
+                }//end else
             }//end else if
         }//end while
 
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
+
+        // Render screen background
+        SDL_RenderCopy(renderer, background_texture, NULL, NULL);
 
         // Render ships on the left side
         for (int i = 0; i < NUM_SHIPS; i++) {
@@ -473,33 +497,62 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
                 } else {
                     SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
                 }//end else
+                if (ship_selected == i) {
+                    SDL_Rect selected_ship_rect = {50, 50 + i * 50, ships[i].size * CELL_SIZE, CELL_SIZE};
+                    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
+                    SDL_RenderDrawRect(renderer, &selected_ship_rect);
+                }//end if
             }//end for
         }//end for
 
-        // Render the orientation button
-        if (orientation == 0) {
-            render_text(renderer, "Orientation: Horizontal", orientation_button.x, orientation_button.y);
+        // Render the orientation button and background
+        if (hover_orientation) {
+            SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray
         } else {
-            render_text(renderer, "Orientation: Vertical", orientation_button.x, orientation_button.y);
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
+        }//end else
+        SDL_RenderFillRect(renderer, &orientation_button);
+
+        // Render button shadow
+        SDL_Rect shadow_rect = orientation_button;
+        shadow_rect.x += 4;
+        shadow_rect.y += 4;
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
+        SDL_RenderFillRect(renderer, &shadow_rect);
+
+        if (orientation == 0) {
+            render_text(renderer, "Orientation: Horizontal", orientation_button.x + 24, orientation_button.y + 8);
+        } else {
+            render_text(renderer, "Orientation: Vertical", orientation_button.x + 24, orientation_button.y + 8);
         }//end else
 
         // Render the grid on the right side
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 SDL_Rect grid_rect = {400 + i * CELL_SIZE, 50 + j * CELL_SIZE, CELL_SIZE, CELL_SIZE};
-                SDL_RenderCopy(renderer, textures->ocean, NULL, &grid_rect);
+
+                // Render grid with ocean_selection_mode texture if a ship is selected
+                if (ship_selected >= 0) {
+                    SDL_RenderCopy(renderer, textures->ocean_selection_mode, NULL, &grid_rect);
+                } else {
+                    SDL_RenderCopy(renderer, textures->ocean, NULL, &grid_rect);
+                }//end else
+
                 // Render grid lines
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
                 SDL_RenderDrawRect(renderer, &grid_rect);
             }//end for
         }//end for
 
-        //Render the exit button
+        // Render the exit button
         render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
 
         // Render the screen
         SDL_RenderPresent(renderer);
     }//end while
+
+    // Destroy textures
+    SDL_DestroyTexture(background_texture);
 }//end selecting_screen
 
 void set_window_size(SDL_Window* window, int width, int height) {
