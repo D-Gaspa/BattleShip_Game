@@ -516,25 +516,45 @@ void selecting_screen(SDL_Renderer *renderer, GameTextures *textures, Player *cu
                             // Rotate the ship if the orientation is vertical 90 degrees
                             if (orientation == 1) {
                                 SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
-                                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
-                                SDL_RenderDrawRect(renderer, &grid_rect);
                                 if (k == 0) {
                                     SDL_RenderCopy(renderer, textures->ship_top, NULL, &ship_rect);
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y); // Top border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x, ship_rect.y + ship_rect.h); // Left border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x + ship_rect.w, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Right border
                                 } else if (k == ship_size - 1) {
                                     SDL_RenderCopy(renderer, textures->ship_bottom, NULL, &ship_rect);
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y + ship_rect.h, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Bottom border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x, ship_rect.y + ship_rect.h); // Left border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x + ship_rect.w, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Right border
                                 } else {
                                     SDL_RenderCopyEx(renderer, textures->ship_middle, NULL, &ship_rect, 90, NULL, SDL_FLIP_NONE);
+                                    // Draw left and right borders without the top and bottom borders
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x, ship_rect.y + ship_rect.h); // Left border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x + ship_rect.w, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Right border
                                 }//end else
                             } else {
                                 SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
-                                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
-                                SDL_RenderDrawRect(renderer, &grid_rect);
                                 if (k == 0) {
                                     SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y); // Top border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x, ship_rect.y + ship_rect.h); // Left border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y + ship_rect.h, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Bottom border
                                 } else if (k == ship_size - 1) {
                                     SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y); // Top border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y + ship_rect.h, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Bottom border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x + ship_rect.w, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Right border
                                 } else {
                                     SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                                    // Draw top and bottom borders without the left and right borders
+                                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y, ship_rect.x + ship_rect.w, ship_rect.y); // Top border
+                                    SDL_RenderDrawLine(renderer, ship_rect.x, ship_rect.y + ship_rect.h, ship_rect.x + ship_rect.w, ship_rect.y + ship_rect.h); // Bottom border
                                 }//end else
                             }//end else
                         }//end for
