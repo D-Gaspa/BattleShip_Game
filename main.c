@@ -1,16 +1,18 @@
 #define SDL_MAIN_HANDLED
+
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_thread.h>
+#include <stdbool.h>
 
 #define BOARD_SIZE 10
 #define NUM_SHIPS 5
 #define CELL_SIZE 32
 
-TTF_Font* font = NULL;
+TTF_Font *font = NULL;
 int font_size = 24;
 
 // Structure for cell states
@@ -69,17 +71,17 @@ typedef struct {
 
 // Structure for game textures
 typedef struct {
-    SDL_Texture* ocean;
-    SDL_Texture* ocean_selection_mode;
-    SDL_Texture* ship_top;
-    SDL_Texture* ship_left;
-    SDL_Texture* ship_middle;
-    SDL_Texture* ship_right;
-    SDL_Texture* ship_bottom;
-    SDL_Texture* hit_enemy_ship;
-    SDL_Texture* hit_own_ship;
-    SDL_Texture* hit_ocean;
-    SDL_Texture* miss;
+    SDL_Texture *ocean;
+    SDL_Texture *ocean_selection_mode;
+    SDL_Texture *ship_top;
+    SDL_Texture *ship_left;
+    SDL_Texture *ship_middle;
+    SDL_Texture *ship_right;
+    SDL_Texture *ship_bottom;
+    SDL_Texture *hit_enemy_ship;
+    SDL_Texture *hit_own_ship;
+    SDL_Texture *hit_ocean;
+    SDL_Texture *miss;
 } GameTextures;
 
 // Structure for move results
@@ -89,10 +91,10 @@ typedef enum {
     MOVE_RESULT_SUNK_SHIP
 } MoveResult;
 
-SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer);
+SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer);
 
-GameTextures* load_game_textures(SDL_Renderer* renderer) {
-    GameTextures* textures = (GameTextures*)malloc(sizeof(GameTextures));
+GameTextures *load_game_textures(SDL_Renderer *renderer) {
+    GameTextures *textures = (GameTextures *) malloc(sizeof(GameTextures));
     if (textures == NULL) {
         printf("Failed to allocate memory for game textures.\n");
         return NULL;
@@ -113,14 +115,14 @@ GameTextures* load_game_textures(SDL_Renderer* renderer) {
     return textures;
 }//end load_game_textures
 
-SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer) {
-    SDL_Surface* surface = IMG_Load(filename);
+SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer) {
+    SDL_Surface *surface = IMG_Load(filename);
     if (surface == NULL) {
         printf("Failed to load image: %s. SDL Error: %s\n", filename, IMG_GetError());
         return NULL;
     }//end if
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     if (texture == NULL) {
         printf("Failed to create texture from surface. SDL Error: %s\n", SDL_GetError());
     }//end if
@@ -130,8 +132,8 @@ SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer) {
 }//end load_texture
 
 // Load animated background textures
-SDL_Texture** load_animated_background(SDL_Renderer* renderer, const char* filepath, int num_frames) {
-    SDL_Texture** textures = (SDL_Texture**)malloc(sizeof(SDL_Texture*) * num_frames);
+SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filepath, int num_frames) {
+    SDL_Texture **textures = (SDL_Texture **) malloc(sizeof(SDL_Texture *) * num_frames);
     for (int i = 0; i < num_frames; i++) {
         char filename[128];
         snprintf(filename, sizeof(filename), "%s%d.png", filepath, i);
@@ -144,8 +146,8 @@ SDL_Texture** load_animated_background(SDL_Renderer* renderer, const char* filep
     return textures;
 }//end load_animated_background
 
-void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* textures) {
-    SDL_Texture* texture = NULL;
+void render_cell(SDL_Renderer *renderer, const Cell *cell, const GameTextures *textures) {
+    SDL_Texture *texture = NULL;
 
     switch (cell->state) {
         case CELL_STATE_EMPTY:
@@ -188,10 +190,10 @@ void render_cell(SDL_Renderer* renderer, const Cell* cell, const GameTextures* t
     }//end if
 }//end render_cell
 
-void initialize_game_board(GameBoard* board) {
+void initialize_game_board(GameBoard *board) {
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            Cell* cell = &board->cells[i][j];
+            Cell *cell = &board->cells[i][j];
             cell->x = i;
             cell->y = j;
             cell->width = CELL_SIZE;
@@ -206,19 +208,19 @@ void initialize_game_board(GameBoard* board) {
     }//end for
 }//end initialize_game_board
 
-void render_text(SDL_Renderer* renderer, const char* text, int x, int y) {
+void render_text(SDL_Renderer *renderer, const char *text, int x, int y) {
     // Set the text color
     SDL_Color color = {0, 0, 0, 255}; // Black
 
     // Create a surface containing the rendered text
-    SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, color);
+    SDL_Surface *text_surface = TTF_RenderText_Solid(font, text, color);
     if (text_surface == NULL) {
         printf("TTF_RenderText_Solid: %s\n", TTF_GetError());
         exit(2);
     }//end if
 
     // Convert the surface to a texture
-    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
     if (text_texture == NULL) {
         printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
         exit(2);
@@ -252,19 +254,20 @@ typedef enum {
     MAIN_MENU_EXIT
 } MainMenuOption;
 
-MainMenuOption main_menu(SDL_Renderer* renderer) {
+MainMenuOption main_menu(SDL_Renderer *renderer) {
     MainMenuOption selected_option = MAIN_MENU_EXIT;
 
     // Load animated background textures
     const int num_background_frames = 10;
-    SDL_Texture** background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_", num_background_frames);
+    SDL_Texture **background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_",
+                                                               num_background_frames);
     if (background_frames == NULL) {
         printf("Failed to load animated background.\n");
         return MAIN_MENU_EXIT;
     }//end if
 
     // Create buttons and positions for the main menu
-    const char* button_labels[] = {"New Game", "Load", "Exit"};
+    const char *button_labels[] = {"New Game", "Load", "Exit"};
     SDL_Rect button_rects[3];
     for (int i = 0; i < 3; i++) {
         button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 75;
@@ -300,7 +303,7 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
 
                 for (int i = 0; i < 3; i++) {
                     if (is_mouse_inside_button(x, y, button_rects[i])) {
-                        selected_option = (MainMenuOption)i;
+                        selected_option = (MainMenuOption) i;
                         running = 0;
                         break;
                     } else {
@@ -348,9 +351,9 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
     return selected_option;
 }//end main_menu
 
-void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* current_player) {
+void selecting_screen(SDL_Renderer *renderer, GameTextures *textures, Player *current_player) {
     // Load background texture
-    SDL_Texture* background_texture = IMG_LoadTexture(renderer, "Assets/selecting_screen_background.jpg");
+    SDL_Texture *background_texture = IMG_LoadTexture(renderer, "Assets/selecting_screen_background.jpg");
 
     // Initialize variables
     int ship_selected = -1;
@@ -358,14 +361,14 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* cu
     int hover_orientation = 0;
     initialize_game_board(&current_player->board);
 
-    SDL_Rect orientation_button = { 50, 300, 275, 50 }; // x, y, width, height
-    SDL_Rect exit_button = { 0, 0, 100, 50 };
+    SDL_Rect orientation_button = {50, 300, 275, 50}; // x, y, width, height
+    SDL_Rect exit_button = {0, 0, 100, 50};
 
     Ship ships[NUM_SHIPS] = {
-            {CARRIER, CARRIER, 0},
-            {BATTLESHIP, BATTLESHIP, 0},
-            {DESTROYER, DESTROYER, 0},
-            {SUBMARINE, SUBMARINE, 0},
+            {CARRIER,     CARRIER,     0},
+            {BATTLESHIP,  BATTLESHIP,  0},
+            {DESTROYER,   DESTROYER,   0},
+            {SUBMARINE,   SUBMARINE,   0},
             {PATROL_BOAT, PATROL_BOAT, 0}
     };
 
@@ -471,6 +474,11 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* cu
         }//end else
 
         // Render the grid on the right side
+        int mouse_x, mouse_y;
+        SDL_GetMouseState(&mouse_x, &mouse_y);
+        int grid_mouse_x = (mouse_x - 400) / CELL_SIZE;
+        int grid_mouse_y = (mouse_y - 50) / CELL_SIZE;
+
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 SDL_Rect grid_rect = {400 + i * CELL_SIZE, 50 + j * CELL_SIZE, CELL_SIZE, CELL_SIZE};
@@ -485,9 +493,84 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* cu
                 // Render grid lines
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
                 SDL_RenderDrawRect(renderer, &grid_rect);
+
+                // Render the ship on the grid if the user is hovering over it
+                if (ship_selected >= 0 && grid_mouse_x >= 0 && grid_mouse_x < BOARD_SIZE &&
+                    grid_mouse_y >= 0 && grid_mouse_y < BOARD_SIZE) {
+                    int ship_size = ships[ship_selected].size;
+                    bool valid_position = true;
+
+                    for (int k = 0; k < ship_size; k++) {
+                        int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
+                        int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
+
+                        // Check if the ship is within the grid and not overlapping with another ship
+                        if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE &&
+                            current_player->board.cells[cell_y][cell_x].state == CELL_STATE_EMPTY) {
+                            SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE,
+                                                  CELL_SIZE};
+                            // Render ship texture based on the orientation
+                            if (orientation == 0) {
+                                SDL_RenderCopy(renderer, (i == 0 ? textures->ship_left :
+                                (i == ship_size - 1 ? textures->ship_right :
+                                textures->ship_middle)),NULL, &ship_rect);
+                            } else {
+                                // Rotate ship texture by 90 degrees for vertical orientation
+                                SDL_Texture *ship_texture;
+                                double rotation_angle = 90.0;
+                                if (i == 0) {
+                                    ship_texture = textures->ship_left;
+                                } else if (i == ship_size - 1) {
+                                    ship_texture = textures->ship_right;
+                                } else {
+                                    ship_texture = textures->ship_middle;
+                                }//end else
+                                SDL_RenderCopyEx(renderer, ship_texture, NULL, &ship_rect, rotation_angle, NULL,SDL_FLIP_NONE);
+                            }//end else
+                        } else {
+                            valid_position = false;
+                        }//end else
+                    }//end for
+
+                    // Render the ship on the grid if the position is valid
+                    if (valid_position) {
+                        for (int k = 0; k < ship_size; k++) {
+                            int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
+                            int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
+                            SDL_Rect ship_rect = {400 + cell_x * CELL_SIZE, 50 + cell_y * CELL_SIZE, CELL_SIZE,
+                                                  CELL_SIZE};
+                            if (k == 0) {
+                                SDL_RenderCopy(renderer, textures->ship_left, NULL, &ship_rect);
+                            } else if (k == ship_size - 1) {
+                                SDL_RenderCopy(renderer, textures->ship_right, NULL, &ship_rect);
+                            } else {
+                                SDL_RenderCopy(renderer, textures->ship_middle, NULL, &ship_rect);
+                            }// end else
+                        }//end for
+                    }//end if
+                }//end if
+                // Render white border when hovering over cells with a ship selected
+                if (ship_selected >= 0) {
+                    int ship_size = ships[ship_selected].size;
+                    bool is_hovering = false;
+
+                    for (int k = 0; k < ship_size; k++) {
+                        int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
+                        int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
+
+                        if (cell_x == i && cell_y == j) {
+                            is_hovering = true;
+                            break;
+                        }//end if
+                    }//end for
+
+                    if (is_hovering) {
+                        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+                        SDL_RenderDrawRect(renderer, &grid_rect);
+                    }//end if
+                }//end if
             }//end for
         }//end for
-
         // Render the exit button
         render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
 
@@ -498,10 +581,6 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* cu
     // Destroy textures
     SDL_DestroyTexture(background_texture);
 }//end selecting_screen
-
-int input_thread_function(void* data);
-int handle_events(SDL_Event* event, Player* player1, Player* player2);
-
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -552,7 +631,6 @@ int main() {
     Player player2;
     player1.is_turn = 1;
     player2.is_turn = 0;
-    Player* players[] = { &player1, &player2 };
 
     // Create main menu
     MainMenuOption menu_option = main_menu(renderer);
@@ -629,71 +707,3 @@ int main() {
     TTF_Quit();
     return 0;
 }//end main
-
-int input_thread_function(void* data) {
-    SDL_Event event;
-    int running = 1;
-    Player* player1 = ((Player**)data)[0];
-    Player* player2 = ((Player**)data)[1];
-
-    while (running) {
-        running = handle_events(&event, player1, player2);
-    }//end while
-
-    return 0;
-}//end input_thread_function
-
-MoveResult handle_player_move(Player* opponent, int x, int y) {
-    Cell* cell = &opponent->board.cells[x][y];
-
-    if (cell->hit) {
-        return MOVE_RESULT_MISS;
-    }//end if
-
-    cell->hit = 1;
-    if (cell->occupied) {
-        for (int i = 0; i < NUM_SHIPS; i++) {
-            Ship* ship = &opponent->ships[i];
-            if (ship->type == cell->state - 1) {
-                ship->hit_count++;
-
-                if (ship->hit_count == ship->size) {
-                    opponent->ships_remaining--;
-                    cell->state = CELL_STATE_HIT_ENEMY_SHIP;
-                    return MOVE_RESULT_SUNK_SHIP;
-                }//end if
-            }//end if
-        }//end for
-
-        cell->state = CELL_STATE_HIT_OWN_SHIP;
-        return MOVE_RESULT_HIT;
-    } else {
-        cell->state = CELL_STATE_MISS;
-        return MOVE_RESULT_MISS;
-    }//end else
-}//end handle_player_move
-
-int handle_events(SDL_Event* event, Player* player1, Player* player2) {
-    while (SDL_PollEvent(event)) {
-        if (event->type == SDL_QUIT) {
-            return 0;
-        } else if (event->type == SDL_MOUSEBUTTONDOWN) {
-            int x = event->button.x / CELL_SIZE;
-            int y = event->button.y / CELL_SIZE;
-
-            Player* opponent = player1->is_turn ? player2 : player1;
-
-            MoveResult result = handle_player_move(opponent, x, y);
-            if (result != MOVE_RESULT_MISS) {
-                if (opponent->ships_remaining == 0) {
-                    printf("Player %d wins!\n", player1->is_turn ? 1 : 2);
-                    return 0;
-                }//end if
-            } else {
-                player1->is_turn = !player1->is_turn;
-                player2->is_turn = !player2->is_turn;
-            }//end else
-        }//end else if
-    }//end while
-    return 1;
-}//end handle_events
