@@ -89,36 +89,6 @@ typedef enum {
     MOVE_RESULT_SUNK_SHIP
 } MoveResult;
 
-MoveResult handle_player_move(Player* opponent, int x, int y) {
-    Cell* cell = &opponent->board.cells[x][y];
-
-    if (cell->hit) {
-        return MOVE_RESULT_MISS;
-    }//end if
-
-    cell->hit = 1;
-    if (cell->occupied) {
-        for (int i = 0; i < NUM_SHIPS; i++) {
-            Ship* ship = &opponent->ships[i];
-            if (ship->type == cell->state - 1) {
-                ship->hit_count++;
-
-                if (ship->hit_count == ship->size) {
-                    opponent->ships_remaining--;
-                    cell->state = CELL_STATE_HIT_ENEMY_SHIP;
-                    return MOVE_RESULT_SUNK_SHIP;
-                }//end if
-            }//end if
-        }//end for
-
-        cell->state = CELL_STATE_HIT_OWN_SHIP;
-        return MOVE_RESULT_HIT;
-    } else {
-        cell->state = CELL_STATE_MISS;
-        return MOVE_RESULT_MISS;
-    }//end else
-}//end handle_player_move
-
 SDL_Texture* load_texture(const char* filename, SDL_Renderer* renderer);
 
 GameTextures* load_game_textures(SDL_Renderer* renderer) {
@@ -235,44 +205,6 @@ void initialize_game_board(GameBoard* board) {
         }//end for
     }//end for
 }//end initialize_game_board
-
-int handle_events(SDL_Event* event, Player* player1, Player* player2) {
-    while (SDL_PollEvent(event)) {
-        if (event->type == SDL_QUIT) {
-            return 0;
-        } else if (event->type == SDL_MOUSEBUTTONDOWN) {
-            int x = event->button.x / CELL_SIZE;
-            int y = event->button.y / CELL_SIZE;
-
-            Player* opponent = player1->is_turn ? player2 : player1;
-
-            MoveResult result = handle_player_move(opponent, x, y);
-            if (result != MOVE_RESULT_MISS) {
-                if (opponent->ships_remaining == 0) {
-                    printf("Player %d wins!\n", player1->is_turn ? 1 : 2);
-                    return 0;
-                }//end if
-            } else {
-                player1->is_turn = !player1->is_turn;
-                player2->is_turn = !player2->is_turn;
-            }//end else
-        }//end else if
-    }//end while
-    return 1;
-}//end handle_events
-
-int input_thread_function(void* data) {
-    SDL_Event event;
-    int running = 1;
-    Player* player1 = ((Player**)data)[0];
-    Player* player2 = ((Player**)data)[1];
-
-    while (running) {
-        running = handle_events(&event, player1, player2);
-    }//end while
-
-    return 0;
-}//end input_thread_function
 
 void render_text(SDL_Renderer* renderer, const char* text, int x, int y) {
     // Set the text color
@@ -416,7 +348,7 @@ MainMenuOption main_menu(SDL_Renderer* renderer) {
     return selected_option;
 }//end main_menu
 
-void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
+void selecting_screen(SDL_Renderer* renderer, GameTextures* textures, Player* current_player) {
     // Load background texture
     SDL_Texture* background_texture = IMG_LoadTexture(renderer, "Assets/selecting_screen_background.jpg");
 
@@ -424,6 +356,7 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
     int ship_selected = -1;
     int orientation = 0; // 0 for horizontal, 1 for vertical
     int hover_orientation = 0;
+    initialize_game_board(&current_player->board);
 
     SDL_Rect orientation_button = { 50, 300, 275, 50 }; // x, y, width, height
     SDL_Rect exit_button = { 0, 0, 100, 50 };
@@ -566,9 +499,9 @@ void selecting_screen(SDL_Renderer* renderer, GameTextures* textures) {
     SDL_DestroyTexture(background_texture);
 }//end selecting_screen
 
-void set_window_size(SDL_Window* window, int width, int height) {
-    SDL_SetWindowSize(window, width, height);
-}//end set_window_size
+int input_thread_function(void* data);
+int handle_events(SDL_Event* event, Player* player1, Player* player2);
+
 
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -582,20 +515,21 @@ int main() {
     }//end if
 
     // Create an SDL window and renderer
-    SDL_Window* window = SDL_CreateWindow("Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, BOARD_SIZE * CELL_SIZE, BOARD_SIZE * CELL_SIZE, SDL_WINDOW_SHOWN);
+    SDL_Window *window = SDL_CreateWindow("Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                          BOARD_SIZE * CELL_SIZE, BOARD_SIZE * CELL_SIZE, SDL_WINDOW_SHOWN);
     if (window == NULL) {
         printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
     }//end if
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
     }//end if
 
     // Load game textures
-    GameTextures* textures = load_game_textures(renderer);
+    GameTextures *textures = load_game_textures(renderer);
     if (textures == NULL) {
         printf("Failed to load game textures.\n");
         return -1;
@@ -613,6 +547,13 @@ int main() {
         exit(2);
     }//end if
 
+    // Initialize players
+    Player player1;
+    Player player2;
+    player1.is_turn = 1;
+    player2.is_turn = 0;
+    Player* players[] = { &player1, &player2 };
+
     // Create main menu
     MainMenuOption menu_option = main_menu(renderer);
     if (menu_option == MAIN_MENU_EXIT) {
@@ -628,55 +569,55 @@ int main() {
     } else if (menu_option == MAIN_MENU_LOAD) {
         // Load a saved game (not yet implemented)
     } else if (menu_option == MAIN_MENU_NEW_GAME) {
-        set_window_size(window, 800, 500);
-        selecting_screen(renderer, textures);
+        SDL_DestroyRenderer(renderer); // Destroy the renderer for the main menu
+        SDL_DestroyWindow(window);     // Destroy the window for the main menu
+
+        window = SDL_CreateWindow("Battleship - Player 1", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  800, 500, SDL_WINDOW_SHOWN);
+        if (window == NULL) {
+            printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
+            return -1;
+        }//end if
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+        // Load game textures
+        textures = load_game_textures(renderer);
+
+        if (textures == NULL) {
+            printf("Failed to load game textures.\n");
+            return -1;
+        }//end if
+        if (renderer == NULL) {
+            printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+            return -1;
+        }//end if
+        selecting_screen(renderer, textures, &player1);
+
+        SDL_DestroyRenderer(renderer); // Destroy the renderer for player1
+        SDL_DestroyWindow(window);     // Destroy the window for player1
+
+        // Create a new window and renderer for player2
+        window = SDL_CreateWindow("Battleship - Player 2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  800, 500, SDL_WINDOW_SHOWN);
+        if (window == NULL) {
+            printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
+            return -1;
+        }//end if
+
+        // Load game textures
+        textures = load_game_textures(renderer);
+
+        if (textures == NULL) {
+            printf("Failed to load game textures.\n");
+            return -1;
+        }//end if
+        if (renderer == NULL) {
+            printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+            return -1;
+        }//end if
+
+        selecting_screen(renderer, textures, &player2);
     }//end else if
-
-    // Initialize game board
-    GameBoard board;
-    initialize_game_board(&board);
-
-    // Initialize players
-    Player player1;
-    Player player2;
-    initialize_game_board(&player1.board);
-    initialize_game_board(&player2.board);
-    player1.is_turn = 1;
-    player2.is_turn = 0;
-    Player* players[] = { &player1, &player2 };
-
-    // Create input thread
-    SDL_Thread* input_thread = SDL_CreateThread(input_thread_function, "InputThread", (void*)players);
-    if (input_thread == NULL) {
-        printf("Failed to create input thread. SDL Error: %s\n", SDL_GetError());
-        return -1;
-    }//end if
-
-    int running = 1;
-    SDL_Event event;
-
-    // Main game loop
-    while (running) {
-        running = handle_events(&event, &player1, &player2);
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        // Render the board
-        Player* current_player = player1.is_turn ? &player1 : &player2;
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                render_cell(renderer, &current_player->board.cells[i][j], textures);
-            }//end for
-        }//end for
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
-    }//end while
-
-    // Wait for input thread to finish
-    int thread_return_value;
-    SDL_WaitThread(input_thread, &thread_return_value);
 
     // Cleanup and exit
     free(textures);
@@ -688,3 +629,71 @@ int main() {
     TTF_Quit();
     return 0;
 }//end main
+
+int input_thread_function(void* data) {
+    SDL_Event event;
+    int running = 1;
+    Player* player1 = ((Player**)data)[0];
+    Player* player2 = ((Player**)data)[1];
+
+    while (running) {
+        running = handle_events(&event, player1, player2);
+    }//end while
+
+    return 0;
+}//end input_thread_function
+
+MoveResult handle_player_move(Player* opponent, int x, int y) {
+    Cell* cell = &opponent->board.cells[x][y];
+
+    if (cell->hit) {
+        return MOVE_RESULT_MISS;
+    }//end if
+
+    cell->hit = 1;
+    if (cell->occupied) {
+        for (int i = 0; i < NUM_SHIPS; i++) {
+            Ship* ship = &opponent->ships[i];
+            if (ship->type == cell->state - 1) {
+                ship->hit_count++;
+
+                if (ship->hit_count == ship->size) {
+                    opponent->ships_remaining--;
+                    cell->state = CELL_STATE_HIT_ENEMY_SHIP;
+                    return MOVE_RESULT_SUNK_SHIP;
+                }//end if
+            }//end if
+        }//end for
+
+        cell->state = CELL_STATE_HIT_OWN_SHIP;
+        return MOVE_RESULT_HIT;
+    } else {
+        cell->state = CELL_STATE_MISS;
+        return MOVE_RESULT_MISS;
+    }//end else
+}//end handle_player_move
+
+int handle_events(SDL_Event* event, Player* player1, Player* player2) {
+    while (SDL_PollEvent(event)) {
+        if (event->type == SDL_QUIT) {
+            return 0;
+        } else if (event->type == SDL_MOUSEBUTTONDOWN) {
+            int x = event->button.x / CELL_SIZE;
+            int y = event->button.y / CELL_SIZE;
+
+            Player* opponent = player1->is_turn ? player2 : player1;
+
+            MoveResult result = handle_player_move(opponent, x, y);
+            if (result != MOVE_RESULT_MISS) {
+                if (opponent->ships_remaining == 0) {
+                    printf("Player %d wins!\n", player1->is_turn ? 1 : 2);
+                    return 0;
+                }//end if
+            } else {
+                player1->is_turn = !player1->is_turn;
+                player2->is_turn = !player2->is_turn;
+            }//end else
+        }//end else if
+    }//end while
+    return 1;
+}//end handle_events
