@@ -1,5 +1,7 @@
+// SDL must be told to redefine the main function in order to work with some platforms
 #define SDL_MAIN_HANDLED
 
+// Include necessary libraries
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,11 +10,12 @@
 #include <SDL_thread.h>
 #include <stdbool.h>
 
+// Define constants for the game
 #define BOARD_SIZE 10
 #define NUM_SHIPS 5
 #define CELL_SIZE 32
 
-// Structures for the game board
+// Structure for representing a cell on the game board
 typedef struct {
     int x;
     int y;
@@ -22,11 +25,12 @@ typedef struct {
     bool hit;
 } Cell;
 
+// Structure for representing a game board
 typedef struct {
     Cell cells[BOARD_SIZE][BOARD_SIZE];
 } GameBoard;
 
-// Structures for the ships
+// Enum for representing ship types
 typedef enum {
     CARRIER = 5,
     BATTLESHIP = 4,
@@ -35,6 +39,7 @@ typedef enum {
     PATROL_BOAT = 2
 } ShipType;
 
+// Structure for representing a ship
 typedef struct {
     ShipType type;
     int size;
@@ -44,7 +49,7 @@ typedef struct {
     int orientation;
 } Ship;
 
-// Structure for the player
+// Structure for representing a player
 typedef struct {
     GameBoard board;
     Ship ships[NUM_SHIPS];
@@ -52,7 +57,7 @@ typedef struct {
     int is_turn;
 } Player;
 
-// Structure for game textures
+// Structure for holding game textures
 typedef struct {
     SDL_Texture *ocean;
     SDL_Texture *ocean_selection_mode;
@@ -67,32 +72,59 @@ typedef struct {
     SDL_Texture *miss;
 } GameTextures;
 
-// Structure for move results
+// Enum for representing the result of a move
 typedef enum {
     MOVE_RESULT_MISS,
     MOVE_RESULT_HIT,
     MOVE_RESULT_SUNK_SHIP
 } MoveResult;
 
-// Structure for main menu options
+// Enum for representing main menu options
 typedef enum {
     MAIN_MENU_NEW_GAME,
     MAIN_MENU_LOAD,
     MAIN_MENU_EXIT
 } MainMenuOption;
 
+// Global variables for font and font size
 TTF_Font *font = NULL;
 int font_size = 24;
 
-SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer);
+/// \brief Load an image file as an SDL_Texture.
+/// \param filename The path to the image file.
+/// \param renderer The SDL_Renderer used to create the texture.
+/// \return A pointer to the loaded SDL_Texture, or NULL if loading fails.
+SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer) {
+    // Load the image as an SDL_Surface
+    SDL_Surface *surface = IMG_Load(filename);
+    if (surface == NULL) {
+        printf("Failed to load image: %s. SDL Error: %s\n", filename, IMG_GetError());
+        return NULL;
+    }//end if
 
+    // Convert the SDL_Surface to an SDL_Texture
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == NULL) {
+        printf("Failed to create texture from surface. SDL Error: %s\n", SDL_GetError());
+    }//end if
+
+    // Free the SDL_Surface
+    SDL_FreeSurface(surface);
+    return texture;
+}//end load_texture
+
+/// \brief Load all game textures and store them in a GameTextures structure.
+/// \param renderer The SDL_Renderer used to create the textures.
+/// \return A pointer to the loaded GameTextures, or NULL if loading fails.
 GameTextures *load_game_textures(SDL_Renderer *renderer) {
+    // Allocate memory for the GameTextures structure
     GameTextures *textures = (GameTextures *) malloc(sizeof(GameTextures));
     if (textures == NULL) {
         printf("Failed to allocate memory for game textures.\n");
         return NULL;
     }//end if
 
+    // Load individual game textures
     textures->ocean = load_texture("Assets/ocean.png", renderer);
     textures->ocean_selection_mode = load_texture("Assets/ocean_selection_mode.png", renderer);
     textures->ship_bottom = load_texture("Assets/ship_bottom.png", renderer);
@@ -108,24 +140,16 @@ GameTextures *load_game_textures(SDL_Renderer *renderer) {
     return textures;
 }//end load_game_textures
 
-SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer) {
-    SDL_Surface *surface = IMG_Load(filename);
-    if (surface == NULL) {
-        printf("Failed to load image: %s. SDL Error: %s\n", filename, IMG_GetError());
-        return NULL;
-    }//end if
-
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (texture == NULL) {
-        printf("Failed to create texture from surface. SDL Error: %s\n", SDL_GetError());
-    }//end if
-
-    SDL_FreeSurface(surface);
-    return texture;
-}//end load_texture
-
+/// \brief Load an animated background by loading multiple image frames as SDL_Textures.
+/// \param renderer The SDL_Renderer used to create the textures.
+/// \param filepath The base file path of the image sequence, without the frame number or file extension.
+/// \param num_frames The number of frames in the animation.
+/// \return An array of pointers to the loaded SDL_Texture frames, or NULL if loading fails.
 SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filepath, int num_frames) {
+    // Allocate memory for the array of SDL_Texture pointers
     SDL_Texture **textures = (SDL_Texture **) malloc(sizeof(SDL_Texture *) * num_frames);
+
+    // Load each frame of the animation
     for (int i = 0; i < num_frames; i++) {
         char filename[128];
         snprintf(filename, sizeof(filename), "%s%d.png", filepath, i);
@@ -135,23 +159,15 @@ SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filep
             return NULL;
         }//end if
     }//end for
+
     return textures;
 }//end load_animated_background
 
-void initialize_game_board(GameBoard *board) {
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            Cell *cell = &board->cells[i][j];
-            cell->x = i;
-            cell->y = j;
-            cell->width = CELL_SIZE;
-            cell->height = CELL_SIZE;
-            cell->occupied = false;
-            cell->hit = false;
-        }//end for
-    }//end for
-}//end initialize_game_board
-
+/// \brief Renders text at the specified position on the screen.
+/// \param renderer The SDL_Renderer used to render the text.
+/// \param text The text string to render.
+/// \param x The x-coordinate of the top-left corner of the text.
+/// \param y The y-coordinate of the top-left corner of the text.
 void render_text(SDL_Renderer *renderer, const char *text, int x, int y) {
     // Set the text color
     SDL_Color color = {0, 0, 0, 255}; // Black
@@ -185,12 +201,189 @@ void render_text(SDL_Renderer *renderer, const char *text, int x, int y) {
     SDL_FreeSurface(text_surface);
 }//end render_text
 
+/// \brief Checks if the mouse is inside the specified button.
+/// \param x The x-coordinate of the mouse cursor.
+/// \param y The y-coordinate of the mouse cursor.
+/// \param button_rect The rectangle representing the button's position and size.
+/// \return 1 if the mouse is inside the button, 0 otherwise.
 int is_mouse_inside_button(int x, int y, SDL_Rect button_rect) {
     return x >= button_rect.x && x <= button_rect.x + button_rect.w &&
            y >= button_rect.y && y <= button_rect.y + button_rect.h;
 }//end is_mouse_inside_button
 
+/// \brief Initialize main menu by loading the animated background textures and creating the buttons.
+/// \param renderer The SDL_Renderer used to create the textures.
+/// \param background_frames A pointer to the array of background frames.
+/// \param button_rects An array of SDL_Rects representing the positions of the buttons.
+/// \param num_background_frames A pointer to the number of background frames.
+void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SDL_Rect *button_rects, int *num_background_frames) {
+    // Load animated background textures
+    *num_background_frames = 10;
+    *background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_",*num_background_frames);
+    if (*background_frames == NULL) {
+        printf("Failed to load animated background.\n");
+        return;
+    }//end if
+
+    // Create buttons and positions for the main menu
+    for (int i = 0; i < 3; i++) {
+        button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 75;
+        button_rects[i].y = 150 + i * 60;
+        button_rects[i].w = 150;
+        button_rects[i].h = 40;
+    }//end for
+}//end init_main_menu
+
+/// \brief Handle main menu events, such as mouse motion and button clicks.
+/// \param event Pointer to the SDL_Event structure.
+/// \param button_rects An array of SDL_Rects representing the positions of the buttons.
+/// \param hover_button Pointer to the integer representing the button the mouse is hovering over.
+/// \param selected_option Pointer to the MainMenuOption representing the selected menu option.
+/// \return 1 if the program should continue running, 0 if the program should exit.
+int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover_button, MainMenuOption *selected_option) {
+    int running = 1;
+
+    // Handle SDL_QUIT event (e.g., user closes the window)
+    if (event->type == SDL_QUIT) {
+        running = 0;
+    }//end if
+
+    // Handle mouse movement
+    else if (event->type == SDL_MOUSEMOTION) {
+        int x = event->motion.x;
+        int y = event->motion.y;
+
+        // Check if the mouse is hovering over any buttons
+        *hover_button = -1;
+        for (int i = 0; i < 3; i++) {
+            if (is_mouse_inside_button(x, y, button_rects[i])) {
+                *hover_button = i;
+                break;
+            }//end if
+        }//end for
+    }//end if
+
+    // Handle mouse button press
+    else if (event->type == SDL_MOUSEBUTTONDOWN) {
+        int x = event->button.x;
+        int y = event->button.y;
+
+        // Check if any buttons were clicked
+        for (int i = 0; i < 3; i++) {
+            if (is_mouse_inside_button(x, y, button_rects[i])) {
+                *selected_option = (MainMenuOption)i;
+                return 0;
+            }//end if
+        }//end for
+    }//end if
+
+    return running;
+}//end handle_main_menu_events
+
+/// \brief Render the main menu scene, including the animated background, buttons, and button labels.
+/// \param renderer The SDL_Renderer used to render the menu.
+/// \param background_frames An array of SDL_Textures representing the frames of the animated background.
+/// \param frame_counter The current frame of the animated background.
+/// \param button_rects An array of SDL_Rects representing the positions of the buttons.
+/// \param hover_button The index of the button the mouse is hovering over.
+void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, int frame_counter, SDL_Rect *button_rects, int hover_button) {
+    // Render the animated background
+    SDL_RenderCopy(renderer, background_frames[frame_counter], NULL, NULL);
+
+    // Button labels
+    const char *button_labels[] = {"New Game", "Load", "Exit"};
+
+    // Render buttons
+    for (int i = 0; i < 3; i++) {
+        // Set button background color based on whether the mouse is hovering over the button
+        if (hover_button == i) {
+            SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray for hover
+        } else {
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
+        }//end if
+
+        // Render button background
+        SDL_RenderFillRect(renderer, &button_rects[i]);
+
+        // Render button shadow
+        SDL_Rect shadow_rect = button_rects[i];
+        shadow_rect.x += 4;
+        shadow_rect.y += 4;
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
+        SDL_RenderFillRect(renderer, &shadow_rect);
+        // Render button label
+        render_text(renderer, button_labels[i], button_rects[i].x + 24, button_rects[i].y + 8);
+    }//end for
+}//end render_main_menu
+
+/// \brief Renders the main menu.
+/// \param renderer The SDL_Renderer used to render the menu.
+/// \return the selected menu option.
+MainMenuOption main_menu(SDL_Renderer *renderer) {
+    MainMenuOption selected_option = MAIN_MENU_EXIT;
+
+    // Initialize main menu
+    int num_background_frames;
+    SDL_Texture **background_frames;
+    SDL_Rect button_rects[3];
+    init_main_menu(renderer, &background_frames, button_rects, &num_background_frames);
+
+    int running = 1;
+    int frame_counter = 0;
+    int hover_button = -1;
+
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            running = handle_main_menu_events(&event, button_rects, &hover_button, &selected_option);
+            if (running == 0) {
+                break;
+            }//end if
+        }//end while
+
+        // Render the main menu
+        frame_counter = (frame_counter + 1) % num_background_frames;
+        render_main_menu(renderer, background_frames, frame_counter, button_rects, hover_button);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
+    }//end while
+
+    // Free resources
+    for (int i = 0; i < num_background_frames; i++) {
+        SDL_DestroyTexture(background_frames[i]);
+    }//end for
+    free(background_frames);
+
+    return selected_option;
+}//end main_menu
+
+/// \brief Initializes a game board with empty cells.
+/// \param board The GameBoard to initialize.
+void initialize_game_board(GameBoard *board) {
+    // Iterate through all cells of the board
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            Cell *cell = &board->cells[i][j];
+            cell->x = i;
+            cell->y = j;
+            cell->width = CELL_SIZE;
+            cell->height = CELL_SIZE;
+            cell->occupied = false;
+            cell->hit = false;
+        }//end for
+    }//end for
+}//end initialize_game_board
+
+/// \brief Determines if a ship can be placed at the specified position on the board.
+/// \param current_player The player to check the position for.
+/// \param ship_size The size of the ship to place.
+/// \param x The x-coordinate of the top-left cell of the ship.
+/// \param y The y-coordinate of the top-left cell of the ship.
+/// \param orientation The orientation of the ship (0 for horizontal, 1 for vertical).
+/// \return true if the position is valid, false otherwise.
 bool is_position_valid(Player *current_player, int ship_size, int x, int y, int orientation) {
+    // Iterate through all cells of the ship
     for (int k = 0; k < ship_size; k++) {
         int cell_x = x + (orientation == 0 ? k : 0);
         int cell_y = y + (orientation == 1 ? k : 0);
@@ -208,10 +401,18 @@ bool is_position_valid(Player *current_player, int ship_size, int x, int y, int 
     return true;
 }//end is_position_valid
 
+/// \brief Places a ship on the game board.
+/// \param board The GameBoard on which the ship will be placed.
+/// \param ship The Ship to place on the board.
+/// \param x The x-coordinate of the top-left cell of the ship.
+/// \param y The y-coordinate of the top-left cell of the ship.
+/// \param orientation The orientation of the ship (0 for horizontal, 1 for vertical).
 void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation) {
     ship->x = x;
     ship->y = y;
     ship->orientation = orientation;
+
+    // Iterate through all cells of the ship
     for (int i = 0; i < ship->size; i++) {
         int cell_x = x + (orientation == 0 ? i : 0);
         int cell_y = y + (orientation == 1 ? i : 0);
@@ -221,105 +422,8 @@ void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation) {
     }//end for
 }//end place_ship
 
-MainMenuOption main_menu(SDL_Renderer *renderer) {
-    MainMenuOption selected_option = MAIN_MENU_EXIT;
-
-    // Load animated background textures
-    const int num_background_frames = 10;
-    SDL_Texture **background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_",
-                                                               num_background_frames);
-    if (background_frames == NULL) {
-        printf("Failed to load animated background.\n");
-        return MAIN_MENU_EXIT;
-    }//end if
-
-    // Create buttons and positions for the main menu
-    const char *button_labels[] = {"New Game", "Load", "Exit"};
-    SDL_Rect button_rects[3];
-    for (int i = 0; i < 3; i++) {
-        button_rects[i].x = (BOARD_SIZE * CELL_SIZE) / 2 - 75;
-        button_rects[i].y = 150 + i * 60;
-        button_rects[i].w = 150;
-        button_rects[i].h = 40;
-    }//end for
-
-    int running = 1;
-    int frame_counter = 0;
-    int hover_button = -1;
-
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = 0;
-                break;
-            } else if (event.type == SDL_MOUSEMOTION) {
-                int x = event.motion.x;
-                int y = event.motion.y;
-
-                hover_button = -1;
-                for (int i = 0; i < 3; i++) {
-                    if (is_mouse_inside_button(x, y, button_rects[i])) {
-                        hover_button = i;
-                        break;
-                    }//end if
-                }//end for
-            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                int x = event.button.x;
-                int y = event.button.y;
-
-                for (int i = 0; i < 3; i++) {
-                    if (is_mouse_inside_button(x, y, button_rects[i])) {
-                        selected_option = (MainMenuOption) i;
-                        running = 0;
-                        break;
-                    } else {
-                        selected_option = MAIN_MENU_EXIT;
-                    }//end else
-                }//end for
-            }//end else if
-        }//end while
-
-        // Render the animated background
-        SDL_RenderCopy(renderer, background_frames[frame_counter], NULL, NULL);
-        frame_counter = (frame_counter + 1) % num_background_frames;
-
-        for (int i = 0; i < 3; i++) {
-            // Render button background
-            if (hover_button == i) {
-                SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray
-            } else {
-                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
-            }//end else
-            SDL_RenderFillRect(renderer, &button_rects[i]);
-
-            // Render button shadow
-            SDL_Rect shadow_rect = button_rects[i];
-            shadow_rect.x += 4;
-            shadow_rect.y += 4;
-            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
-            SDL_RenderFillRect(renderer, &shadow_rect);
-
-            // Render button label
-            render_text(renderer, button_labels[i], button_rects[i].x + 24, button_rects[i].y + 8);
-        }//end for
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
-    }//end while
-
-    // Free resources
-    // Free background frames
-    for (int i = 0; i < num_background_frames; i++) {
-        SDL_DestroyTexture(background_frames[i]);
-    }//end for
-    free(background_frames);
-
-    return selected_option;
-}//end main_menu
-
 // Functions needed for render_placement_ships_left_side
-/// \brief Renders a ship part based on the part index and the ship size.
+/// \brief Renders a ship part (left, middle, or right) at the given position based on the part index and the ship size.
 /// \param renderer The renderer to use.
 /// \param textures The textures to use.
 /// \param ship_rect The rectangle in which the ship part should be rendered.
@@ -327,21 +431,21 @@ MainMenuOption main_menu(SDL_Renderer *renderer) {
 /// \param ship_size The size of the ship.
 void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size);
 
-/// \brief Renders a border around the selected ship.
+/// \brief Renders a border around the selected ship to indicate that it is selected.
 /// \param renderer The renderer to use.
 /// \param ship_index The index of the ship to check for selection.
 /// \param ship_selected The index of the currently selected ship.
 /// \param ships The array of ships.
 void render_selected_ship_border(SDL_Renderer *renderer, int ship_index, int ship_selected, Ship ships[]);
 
-/// \brief Renders a hover border around a ship if the mouse is hovering over it and the ship is not placed.
+/// \brief Render a border around the ship that the mouse is hovering over (if it is not placed yet)
 /// \param renderer The renderer to use.
 /// \param ship_index The index of the ship to check for hover.
 /// \param placed_ships An array of booleans indicating whether a ship has been placed.
 /// \param ships The array of ships.
 void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool placed_ships[], Ship ships[]);
 
-/// \brief Renders an overlay over a placed ship.
+/// \brief Render a black overlay on top of the placed ship to indicate that it is placed
 /// \param renderer The renderer to use.
 /// \param ship_index The index of the ship to check for placement.
 /// \param part_index The index of the ship part.
@@ -383,6 +487,8 @@ void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *text
 
 void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size) {
     SDL_Texture *part_texture = NULL;
+
+    // Determine which part of the ship to render
     if (part_index == 0) {
         part_texture = textures->ship_left;
     } else if (part_index == ship_size - 1) {
@@ -390,10 +496,13 @@ void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect s
     } else {
         part_texture = textures->ship_middle;
     }//end else
+
+    // Render the ship part
     SDL_RenderCopy(renderer, part_texture, NULL, &ship_rect);
 }//end render_ship_part
 
 void render_selected_ship_border(SDL_Renderer *renderer, int ship_index, int ship_selected, Ship ships[]) {
+    // Check if the current ship is selected
     if (ship_selected == ship_index) {
         SDL_Rect selected_ship_rect = {50, 50 + ship_index * 50, ships[ship_index].size * CELL_SIZE, CELL_SIZE};
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
@@ -405,6 +514,8 @@ void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool
     int x, y;
     SDL_GetMouseState(&x, &y);
     SDL_Rect hover_ship_rect = {50, 50 + ship_index * 50, ships[ship_index].size * CELL_SIZE, CELL_SIZE};
+
+    // Check if the mouse is hovering over the ship, and it has not been placed yet
     if (is_mouse_inside_button(x, y, hover_ship_rect) && !placed_ships[ship_index]) {
         SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
         SDL_RenderDrawRect(renderer, &hover_ship_rect);
@@ -412,6 +523,7 @@ void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool
 }//end render_hover_ship_border
 
 void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part_index, const bool placed_ships[], SDL_Texture *black_texture) {
+    // Check if the current ship has been placed
     if (placed_ships[ship_index]) {
         SDL_Rect placed_ship_rect = {50 + part_index * CELL_SIZE, 50 + ship_index * 50, CELL_SIZE, CELL_SIZE};
         SDL_RenderCopy(renderer, black_texture, NULL, &placed_ship_rect);
@@ -424,12 +536,12 @@ void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part
 /// \param hover_orientation Indicates whether the mouse is hovering over the orientation button.
 void set_button_color(SDL_Renderer *renderer, bool hover_orientation);
 
-/// \brief Renders a shadow for the orientation button.
+/// \brief Renders a shadow under the orientation button to give it a 3D effect.
 /// \param renderer The renderer to use.
 /// \param orientation_button The SDL_Rect of the orientation button.
 void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button);
 
-/// \brief Renders the orientation text based on the current orientation of the ship (0 for horizontal, 1 for vertical).
+/// \brief Renders the orientation text (either "Horizontal" or "Vertical") inside the orientation button based on the current orientation of the ship (0 for horizontal, 1 for vertical).
 /// \param renderer The renderer to use.
 /// \param orientation_button The SDL_Rect of the orientation button.
 /// \param orientation The current orientation of the ship.
@@ -455,6 +567,7 @@ void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orient
 }//end render_placement_orientation_button
 
 void set_button_color(SDL_Renderer *renderer, bool hover_orientation) {
+    // Change the color based on the hover state
     if (hover_orientation) {
         SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray
     } else {
@@ -463,14 +576,18 @@ void set_button_color(SDL_Renderer *renderer, bool hover_orientation) {
 }//end set_button_color
 
 void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button) {
+    // Create a new rectangle for the shadow, offset from the button
     SDL_Rect shadow_rect = orientation_button;
     shadow_rect.x += 4;
     shadow_rect.y += 4;
+
+    // Set the color for the shadow and render it
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
     SDL_RenderFillRect(renderer, &shadow_rect);
 }//end render_button_shadow
 
 void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button, int orientation) {
+    // Render the appropriate text based on the orientation value
     if (orientation == 0) {
         render_text(renderer, "Orientation: Horizontal", orientation_button.x + 24, orientation_button.y + 8);
     } else {
@@ -542,8 +659,10 @@ void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures,
 }//end render_placement_grid_ships
 
 void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int ship_selected) {
+    // Choose the background texture based on whether a ship is selected
     SDL_Texture *background_texture = ship_selected >= 0 ? textures->ocean_selection_mode : textures->ocean;
 
+    // Render the grid background by looping through all cells
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             SDL_Rect grid_rect = {400 + i * CELL_SIZE, 50 + j * CELL_SIZE, CELL_SIZE, CELL_SIZE};
@@ -553,6 +672,7 @@ void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int 
 }//end render_grid_background
 
 void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position) {
+    // Check if a ship is selected
     if (ship_selected >= 0) {
         int ship_size = ships[ship_selected].size;
 
@@ -563,6 +683,7 @@ void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ship
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
         }//end else
 
+        // Loop through each segment of the ship
         for (int k = 0; k < ship_size; k++) {
             int cell_x = grid_mouse_x + (orientation == 0 ? k : 0);
             int cell_y = grid_mouse_y + (orientation == 1 ? k : 0);
@@ -582,28 +703,40 @@ void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ship
 }//end render_ship_hover
 
 void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int orientation, SDL_Rect *ship_rect) {
+    // Vertical orientation
     if (orientation == 1) {
+
+        // Draw top and bottom borders for the first and last segments
         if (segment == 0) {
             SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w, ship_rect->y); // Top border
         } else if (segment == ship_size - 1) {
             SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w, ship_rect->y + ship_rect->h - 1); // Bottom border
         }//end else if
+
+        // Draw left and right borders for all segments
         SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x, ship_rect->y + ship_rect->h); // Left border
         SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1, ship_rect->y + ship_rect->h); // Right border
-    } else {
+    } else { // Horizontal orientation
+
+        // Draw left and right borders for the first and last segments
         if (segment == 0) {
             SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x, ship_rect->y + ship_rect->h); // Left border
         } else if (segment == ship_size - 1) {
             SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1, ship_rect->y + ship_rect->h); // Right border
-        } //end else if
+        }//end else if
+
+        // Draw top and bottom borders for all segments
         SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w, ship_rect->y); // Top border
         SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w, ship_rect->y + ship_rect->h - 1); // Bottom border
     }//end if
 }//end render_ship_border
 
 void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[]) {
+    // Loop through all ships
     for (int i = 0; i < NUM_SHIPS; i++) {
+        // Render the ship if it is placed
         if (placed_ships[i]) {
+            // Loop through each segment of the ship
             for (int j = 0; j < ships[i].size; j++) {
                 int cell_x = ships[i].x + (ships[i].orientation == 0 ? j : 0);
                 int cell_y = ships[i].y + (ships[i].orientation == 1 ? j : 0);
@@ -615,7 +748,10 @@ void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship sh
 }//end render_placed_ships
 
 void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship ship, int segment, int orientation, SDL_Rect *ship_rect) {
+    // Vertical orientation
     if (orientation == 1) {
+
+        // Render the top, bottom, and middle segments based on the segment index
         if (segment == 0) {
             SDL_RenderCopy(renderer, textures->ship_top, NULL, ship_rect);
         } else if (segment == ship.size - 1) {
@@ -623,7 +759,9 @@ void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship sh
         } else {
             SDL_RenderCopyEx(renderer, textures->ship_middle, NULL, ship_rect, 90, NULL, SDL_FLIP_NONE);
         }//end else
-    } else {
+    } else { // Horizontal orientation
+
+        // Render the left, right, and middle segments based on the segment index
         if (segment == 0) {
             SDL_RenderCopy(renderer, textures->ship_left, NULL, ship_rect);
         } else if (segment == ship.size - 1) {
@@ -649,9 +787,13 @@ void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship sh
 /// \param orientation_button The orientation button
 /// \param exit_button The exit button
 void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, int *orientation, int *hover_orientation, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, SDL_Rect orientation_button, SDL_Rect exit_button) {
+    // Handle SDL_QUIT event (e.g., user closes the window)
     if (event->type == SDL_QUIT) {
         *running = 0;
-    } else if (event->type == SDL_MOUSEBUTTONDOWN) {
+    }//end if
+
+    // Handle mouse button press event
+    else if (event->type == SDL_MOUSEBUTTONDOWN) {
         int x = event->button.x;
         int y = event->button.y;
 
@@ -680,7 +822,10 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
                 }//end for
             }//end for
         }//end else
-    } else if (event->type == SDL_MOUSEMOTION) {
+    }//end else if
+
+    // Handle mouse motion event
+    else if (event->type == SDL_MOUSEMOTION) {
         int x = event->motion.x;
         int y = event->motion.y;
 
