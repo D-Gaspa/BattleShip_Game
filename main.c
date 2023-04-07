@@ -229,12 +229,23 @@ void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button);
 /// \param orientation The current orientation of the ship.
 void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button, int orientation);
 
-/// \brief Renders the orientation button that the player can use to change the orientation of the ship that is currently selected.
+/// \brief Renders the reset button that the player can use to reset the board.
+/// \param renderer The renderer to use.
+/// \param reset_button The SDL_Rect of the reset button.
+void render_reset_text(SDL_Renderer *renderer, SDL_Rect reset_button);
+
+/// \brief Renders the orientation button that the player can use to change the orientation of the ship in the placement phase.
 /// \param renderer The renderer to use.
 /// \param orientation_button The SDL_Rect of the orientation button.
 /// \param hover_orientation Indicates whether the mouse is hovering over the orientation button.
 /// \param orientation The current orientation of the ship (0 for horizontal, 1 for vertical).
 void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orientation_button, int hover_orientation, int orientation);
+
+/// \brief Renders the reset button that the player can use to reset the board in the placement phase.
+/// \param renderer The renderer to use.
+/// \param reset_button The SDL_Rect of the reset button.
+/// \param hover_reset Indicates whether the mouse is hovering over the reset button.
+void render_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button, bool hover_reset);
 
 /// \brief Renders the grid background during the placement phase.
 /// \param renderer The renderer to use.
@@ -289,6 +300,18 @@ void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int 
 /// \param valid_position Indicates whether the ship can be placed at the current position.
 void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position);
 
+/// \brief Resets a game board's occupied cells to false.
+/// \param board The GameBoard to reset.
+void reset_game_board(GameBoard *board);
+
+/// \brief Resets the placement phase variables and clears the game board.
+/// \param ships The array of Ship objects to reset.
+/// \param placed_ships An array of booleans indicating whether a ship has been placed.
+/// \param ship_selected A pointer to the currently selected ship index.
+/// \param orientation A pointer to the current orientation of the selected ship.
+/// \param board A pointer to the GameBoard to reset.
+void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, int *orientation, GameBoard *board);
+
 /// \brief Helper function for handling events during the placement phase
 /// \param event The event to handle
 /// \param running Pointer to the running variable
@@ -303,7 +326,8 @@ void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures,
 /// \param valid_position Boolean indicating if the ship is in a valid position
 /// \param orientation_button The orientation button
 /// \param exit_button The exit button
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, int *orientation, int *hover_orientation, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, SDL_Rect orientation_button, SDL_Rect exit_button);
+/// \param reset_button The reset button
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, int *orientation, int *hover_orientation, int *hover_reset, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, SDL_Rect orientation_button, SDL_Rect exit_button, SDL_Rect reset_button);
 
 /// \brief Handles the placement phase screen, where the player can place ships on the game board.
 /// \param renderer The SDL_Renderer to use.
@@ -814,6 +838,10 @@ void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button
     }//end else
 }//end render_orientation_text
 
+void render_reset_text(SDL_Renderer *renderer, SDL_Rect reset_button) {
+    render_text(renderer, "Restart board", reset_button.x + 90, reset_button.y + 10);
+}//end render_reset_text
+
 void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orientation_button, int hover_orientation, int orientation) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_orientation);
@@ -827,6 +855,20 @@ void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orient
     // Render orientation text
     render_orientation_text(renderer, orientation_button, orientation);
 }//end render_placement_orientation_button
+
+void render_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button, bool hover_reset) {
+    // Set button color based on mouse hover
+    set_button_color(renderer, hover_reset);
+
+    // Render button background
+    SDL_RenderFillRect(renderer, &reset_button);
+
+    // Render button shadow
+    render_button_shadow(renderer, reset_button);
+
+    // Render reset text
+    render_reset_text(renderer, reset_button);
+}//end render_reset_button
 
 void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int ship_selected) {
     // Choose the background texture based on whether a ship is selected
@@ -953,13 +995,39 @@ void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures,
     render_placed_ships(renderer, textures, ships, placed_ships);
 }//end render_placement_grid_ships
 
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, int *orientation, int *hover_orientation, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, SDL_Rect orientation_button, SDL_Rect exit_button) {
+void reset_game_board(GameBoard *board) {
+    // Reset all cells to be unoccupied
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            board->cells[i][j].occupied = false;
+        }//end for
+    }//end for
+}//end reset_game_board
+
+void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, int *orientation, GameBoard *board) {
+    // Reset ship_selected and orientation
+    *ship_selected = -1;
+    *orientation = 0;
+
+    // Reset ships and placed_ships arrays
+    for (int i = 0; i < NUM_SHIPS; i++) {
+        placed_ships[i] = false;
+        ships[i].hit_count = 0;
+        ships[i].x = 0;
+        ships[i].y = 0;
+    }//end for
+
+    // Reset the game board
+    reset_game_board(board);
+}//end reset_placement_phase
+
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, int *orientation, int *hover_orientation, int *hover_reset, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, SDL_Rect orientation_button, SDL_Rect exit_button, SDL_Rect reset_button) {
     // Handle SDL_QUIT event (e.g., user closes the window)
     if (event->type == SDL_QUIT) {
         *running = 0;
     }//end if
 
-        // Handle mouse button press event
+    // Handle mouse button press event
     else if (event->type == SDL_MOUSEBUTTONDOWN) {
         int x = event->button.x;
         int y = event->button.y;
@@ -989,6 +1057,11 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
                 }//end for
             }//end for
         }//end else
+
+        // Check if the user clicked on the reset button
+        if (is_mouse_inside_button(x, y, reset_button)) {
+            reset_placement_phase(ships, placed_ships, ship_selected, orientation, &current_player->board);
+        }//end if
     }//end else if
 
         // Handle mouse motion event
@@ -1002,6 +1075,13 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
         } else {
             *hover_orientation = 0;
         }//end else
+
+        // Check if the user is hovering over the reset button
+        if (is_mouse_inside_button(x, y, reset_button)) {
+            *hover_reset = 1;
+        } else {
+            *hover_reset = 0;
+        }//end else
     }//end else if
 
     // Check if the user clicked on the grid
@@ -1009,11 +1089,12 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
         if (valid_position && event->type == SDL_MOUSEBUTTONDOWN && *ship_selected >= 0 && !placed_ships[*ship_selected]) {
             place_ship(&current_player->board, &ships[*ship_selected], grid_mouse_x, grid_mouse_y, *orientation);
             placed_ships[*ship_selected] = true; // Set the ship as placed
-            *ship_selected = -1;
 
             // Update player's ships
             current_player->ships[*ship_selected] = ships[*ship_selected];
             current_player->ships_remaining++;
+
+            *ship_selected = -1;
         }//end if
     }//end if
 }//end handle_placement_phase_event
@@ -1033,10 +1114,12 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
     int ship_selected = -1;
     int orientation = 0; // 0 for horizontal, 1 for vertical
     int hover_orientation = 0;
+    int hover_reset = 0;
     initialize_game_board(&current_player->board);
 
     SDL_Rect orientation_button = {50, 300, 275, 50}; // x, y, width, height
     SDL_Rect exit_button = {0, 0, 100, 50};
+    SDL_Rect reset_button = {50, 400, 275, 50};
 
     Ship ships[NUM_SHIPS] = {
             {CARRIER,     5, 0, 0, 0},
@@ -1060,7 +1143,7 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
         bool valid_position = is_position_valid(current_player, ships[ship_selected].size, grid_mouse_x, grid_mouse_y, orientation);
 
         while (SDL_PollEvent(&event)) {
-            handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, ships, &orientation, &hover_orientation, current_player, grid_mouse_x, grid_mouse_y, valid_position, orientation_button, exit_button);
+            handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, ships, &orientation, &hover_orientation, &hover_reset, current_player, grid_mouse_x, grid_mouse_y, valid_position, orientation_button, exit_button, reset_button);
         }//end while
 
         // Clear screen
@@ -1081,6 +1164,9 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
 
         // Render the exit button
         render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
+
+        // Render reset button
+        render_reset_button(renderer, reset_button, hover_reset);
 
         // Render the screen
         SDL_RenderPresent(renderer);
