@@ -31,18 +31,8 @@ typedef struct {
     Cell cells[BOARD_SIZE][BOARD_SIZE];
 } GameBoard;
 
-// Enum for representing ship types
-typedef enum {
-    CARRIER = 5,
-    BATTLESHIP = 4,
-    DESTROYER = 3,
-    SUBMARINE = 3,
-    PATROL_BOAT = 2
-} ShipType;
-
 // Structure for representing a ship
 typedef struct {
-    ShipType type;
     int size;
     int hit_count;
     int x;
@@ -220,6 +210,15 @@ MainMenuOption main_menu(SDL_Renderer *renderer);
 /// \return void
 void initialize_game_board(GameBoard *board);
 
+/// \brief Initializes ships for a player.
+///
+/// This function initializes the ships for a player by setting the size and initial values
+/// for each ship. The hit_count is set to 0, and the position and orientation are set to
+/// invalid values (-1 and 0, respectively) as the ships have not been placed on the board yet.
+///
+/// \param player Pointer to the Player struct representing the player whose ships are being initialized.
+void initialize_ships(Player *player);
+
 /// \brief Determines if a ship position is valid on the game board.
 ///
 /// Checks if the given ship position is within the grid bounds and not overlapping
@@ -233,38 +232,40 @@ void initialize_game_board(GameBoard *board);
 /// \return true if the position is valid, false otherwise.
 bool is_position_valid(Player *current_player, int ship_size, int x, int y, int orientation);
 
-/// \brief Checks if all ships have been placed on the board.
+/// \brief Checks if all ships have been placed.
 ///
-/// Iterates through the placed_ships array and returns true if all ships have been placed.
+/// This function checks if all the ships have been placed on the board by iterating
+/// through the placed_ships array. If all the ships have been placed, the function
+/// returns true; otherwise, it returns false.
 ///
-/// \param placed_ships An array of booleans indicating whether each ship has been placed.
+/// \param placed_ships Array containing the placement status of each ship.
 /// \return true if all ships have been placed, false otherwise.
 bool all_ships_placed(const bool placed_ships[]);
 
 /// \brief Places a ship on the game board.
 ///
-/// Places a ship on the game board at the specified position and orientation, and
-/// marks the corresponding cells as occupied.
+/// This function places a ship on the game board at the specified position and orientation.
+/// The cells that the ship occupies are marked as occupied and updated with the necessary
+/// information, such as coordinates and hit status.
 ///
-/// \param board A pointer to the GameBoard structure.
-/// \param ship A pointer to the Ship structure to be placed.
-/// \param x The x-coordinate of the ship's starting position.
-/// \param y The y-coordinate of the ship's starting position.
-/// \param orientation The ship's orientation (0 for horizontal, 1 for vertical).
-/// \return void
+/// \param board Pointer to the GameBoard struct representing the game board.
+/// \param ship Pointer to the Ship struct representing the ship to place.
+/// \param x Integer representing the x-coordinate of the ship's position on the board.
+/// \param y Integer representing the y-coordinate of the ship's position on the board.
+/// \param orientation Integer representing the orientation of the ship (0 for horizontal, 1 for vertical).
 void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation);
 
-/// \brief Places all ships randomly on the board.
+/// \brief Places ships randomly on a player's board.
 ///
-/// Randomly places all ships on the game board for the current player using the pcg library.
-/// ensuring valid positions and orientations. Resets the board and ships before placement.
+/// This function generates random positions and orientations for each ship in the game,
+/// and places them on the player's board. It ensures that the randomly generated positions
+/// and orientations are valid before placing the ships.
 ///
-/// \param current_player A pointer to the current Player structure.
-/// \param ships An array of Ship structures representing the game ships.
-/// \param placed_ships An array of booleans indicating whether each ship has been placed.
-/// \param ship_selected A pointer to an int representing the selected ship index.
-/// \param orientation_to_reset A pointer to an int representing the orientation to reset.
-/// \return void
+/// \param current_player Pointer to the Player struct representing the player whose board the ships are being placed on.
+/// \param ships Pointer to the array of Ship structs representing the ships to place.
+/// \param placed_ships Pointer to the array of booleans indicating whether each ship has been placed.
+/// \param ship_selected Pointer to an integer representing the index of the currently selected ship (-1 if none).
+/// \param orientation_to_reset Pointer to an integer representing the orientation to reset after placing ships.
 void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[], int *ship_selected, int *orientation_to_reset);
 
 /// \brief Renders a single part of a ship.
@@ -499,6 +500,39 @@ void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int 
 /// \return void
 void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position);
 
+/// \brief Render the invalid position border on the game board.
+///
+/// This function draws a red border around the game board when an invalid position is clicked.
+///
+/// \param renderer The SDL_Renderer used for rendering.
+/// \return void
+void render_invalid_position_border(SDL_Renderer *renderer);
+
+/// \brief Removes a ship from the game board.
+///
+/// This function removes a ship from the game board by setting the 'occupied' status
+/// of the cells it occupied to false. The ship's position and orientation are used
+/// to determine which cells to update.
+///
+/// \param board Pointer to the GameBoard struct representing the game board.
+/// \param ship Pointer to the Ship struct representing the ship to remove.
+/// \param x Integer representing the x-coordinate of the ship's position on the board.
+/// \param y Integer representing the y-coordinate of the ship's position on the board.
+/// \param orientation Integer representing the orientation of the ship (0 for horizontal, 1 for vertical).
+void remove_ship_from_board(GameBoard *board, Ship *ship, int x, int y, int orientation);
+
+/// \brief Finds the index of the ship located at a specific position on the player's board.
+///
+/// This function iterates through the player's ships to find the one occupying the given
+/// coordinates on the board. If a ship is found at the specified position, its index is
+/// returned; otherwise, the function returns -1.
+///
+/// \param player Pointer to the Player struct representing the player whose ships are being searched.
+/// \param x Integer representing the x-coordinate of the position to search.
+/// \param y Integer representing the y-coordinate of the position to search.
+/// \return The index of the ship found at the given position, or -1 if no ship is found.
+int find_ship_at_position(Player *player, int x, int y);
+
 /// \brief Resets a game board's occupied cells to false.
 ///
 /// This function clears the occupied cells of a game board, setting them all to false.
@@ -520,25 +554,57 @@ void reset_game_board(GameBoard *board);
 /// \return void
 void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, int *orientation, GameBoard *board);
 
-/// \brief Handles events during the ship placement phase of a battleship game.
+/// \brief Handles mouse button down events during the ship placement phase.
 ///
-/// This function processes SDL events during the ship placement phase, such as user clicks and mouse movements.
-/// It updates the game state and user interface based on these events, including placing ships on the board, changing ship orientation,
-/// and interacting with various buttons.
+/// This function processes mouse button down events during the ship placement phase of the game.
+/// It is responsible for handling interactions with buttons, selecting and placing ships on the grid,
+/// and updating the game state accordingly.
 ///
-/// \param event A pointer to an SDL_Event structure representing the current event.
-/// \param running A pointer to a boolean that indicates if the game is running or not.
-/// \param ship_selected A pointer to an integer that holds the index of the currently selected ship.
-/// \param placed_ships A pointer to a boolean array representing if a ship has been placed on the board or not.
-/// \param ships A pointer to an array of Ship structures representing the ships in the game.
-/// \param current_player A pointer to a Player structure representing the current player.
-/// \param grid_mouse_x An integer representing the x-coordinate of the mouse on the grid.
-/// \param grid_mouse_y An integer representing the y-coordinate of the mouse on the grid.
-/// \param valid_position A boolean representing whether the current position is valid for placing a ship.
-/// \param orientation A pointer to an integer representing the current orientation of the selected ship.
-/// \param button_data A pointer to a ButtonData structure containing data for all buttons in the placement phase.
+/// \param event The SDL_Event representing the mouse button down event.
+/// \param running Pointer to a boolean indicating whether the placement phase is still running.
+/// \param current_player Pointer to the Player struct representing the current player.
+/// \param ship_selected Pointer to an integer representing the currently selected ship.
+/// \param placed_ships Pointer to a boolean array indicating which ships have been placed.
+/// \param orientation Pointer to an integer representing the orientation of the selected ship.
+/// \param button_data Pointer to a ButtonData struct containing information about the game buttons.
+/// \param invalid_click Pointer to a boolean indicating whether the last click was invalid (e.g., on an invalid grid position).
+/// \param grid_mouse_x Integer representing the grid x-coordinate of the mouse cursor.
+/// \param grid_mouse_y Integer representing the grid y-coordinate of the mouse cursor.
+/// \param valid_position Pointer to a boolean indicating whether the current position is valid for placing the selected ship.
+/// \param ships Pointer to an array of Ship structs representing the available ships.
+void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected, bool *placed_ships, int *orientation, ButtonData *button_data, bool *invalid_click, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, Ship *ships);
+
+/// \brief Handles mouse motion events during the ship placement phase.
+///
+/// This function processes mouse motion events during the ship placement phase of the game.
+/// It is responsible for updating the hover state of buttons as the mouse cursor moves over them.
+///
+/// \param event The SDL_Event representing the mouse motion event.
+/// \param button_data Pointer to a ButtonData struct containing information about the game buttons.
+/// \param placed_ships Pointer to a boolean array indicating which ships have been placed.
+void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bool *placed_ships);
+
+
+/// \brief Handle events during the placement phase of the game.
+///
+/// This function handles various events like mouse clicks, mouse movements, and SDL_QUIT events
+/// during the placement phase of the game. It also checks whether a ship has been selected,
+/// whether the user clicks on a valid position, and updates the game state accordingly.
+///
+/// \param event The SDL_Event to be processed.
+/// \param running A pointer to a boolean flag indicating whether the placement phase is still running or not.
+/// \param ship_selected A pointer to an integer representing the index of the selected ship.
+/// \param placed_ships A boolean array indicating whether each ship has been placed on the board or not.
+/// \param ships An array of Ship objects representing the available ships.
+/// \param current_player A pointer to the current Player object.
+/// \param grid_mouse_x The x-coordinate of the mouse position on the grid.
+/// \param grid_mouse_y The y-coordinate of the mouse position on the grid.
+/// \param valid_position A pointer to a boolean flag indicating whether the current ship placement position is valid.
+/// \param orientation A pointer to an integer representing the ship's orientation (0 for horizontal, 1 for vertical).
+/// \param invalid_click A pointer to a boolean flag indicating whether an invalid position has been clicked or not.
+/// \param button_data A pointer to a ButtonData structure containing information about the buttons.
 /// \return void
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, int *orientation, ButtonData *button_data);
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, int *orientation, bool *invalid_click, ButtonData *button_data);
 
 /// \brief Displays and handles the ship placement phase screen for a battleship game.
 ///
@@ -953,6 +1019,28 @@ void initialize_game_board(GameBoard *board) {
     }//end for
 }//end initialize_game_board
 
+void initialize_ships(Player *player) {
+    // Iterate through all ships
+    for (int i = 0; i < NUM_SHIPS; ++i) {
+        // Set the size of the ship
+        if (i == 0) {
+            player->ships[i].size = 5;
+        } else if (i == 1 ) {
+            player->ships[i].size = 4;
+        } else if (i == 2 || i == 3) {
+            player->ships[i].size = 3;
+        } else if (i == 4) {
+            player->ships[i].size = 2;
+        }//end else if
+
+        // Initialize the ships values
+        player->ships[i].hit_count = 0;
+        player->ships[i].x = -1;
+        player->ships[i].y = -1;
+        player->ships[i].orientation = 0;
+    }//end for
+}//end initialize_ships
+
 bool is_position_valid(Player *current_player, int ship_size, int x, int y, int orientation) {
     // Iterate through all cells of the ship
     for (int k = 0; k < ship_size; k++) {
@@ -1001,6 +1089,8 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
     // Reset the board and ships
     reset_placement_phase(ships, placed_ships, ship_selected, orientation_to_reset, &current_player->board);
 
+    current_player->ships_remaining = 0;
+
     // Loop until all ships are placed
     for (int i = 0; i < NUM_SHIPS; i++) {
 
@@ -1017,8 +1107,11 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
         } while (!valid);
 
         // Place the ship and mark it as placed
-        place_ship(&current_player->board, &ships[i], x, y, orientation);
+        current_player->ships[i].size = ships[i].size;
+        place_ship(&current_player->board, &current_player->ships[i], x, y, orientation);
         placed_ships[i] = true;
+        current_player->ships_remaining++;
+        current_player->ships[i].hit_count = 0;
     }//end for
 }//end place_random_ships
 
@@ -1324,6 +1417,35 @@ void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures,
     render_placed_ships(renderer, textures, ships, placed_ships);
 }//end render_placement_grid_ships
 
+void render_invalid_position_border(SDL_Renderer *renderer) {
+    // Render red border around the grid
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+    SDL_Rect border_rect = {400, 50, 320, 320};
+    SDL_RenderDrawRect(renderer, &border_rect);
+}//end render_invalid_position_border
+
+void remove_ship_from_board(GameBoard *board, Ship *ship, int x, int y, int orientation) {
+    for (int i = 0; i < ship->size; i++) {
+        int cell_x = x + (orientation == 0 ? i : 0);
+        int cell_y = y + (orientation == 1 ? i : 0);
+
+        if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE) {
+            board->cells[cell_x][cell_y].occupied = false;
+        }//end if
+    }//end for
+}//end remove_ship_from_board
+
+int find_ship_at_position(Player *player, int x, int y) {
+    for (int i = 0; i < NUM_SHIPS; i++) {
+        Ship *ship = &player->ships[i];
+        if (ship->x <= x && x < ship->x + (ship->orientation == 0 ? ship->size : 1) &&
+            ship->y <= y && y < ship->y + (ship->orientation == 1 ? ship->size : 1)) {
+            return i;
+        }//end if
+    }//end for
+    return -1;
+}//end find_ship_at_position
+
 void reset_game_board(GameBoard *board) {
     // Reset all cells to be unoccupied
     for (int i = 0; i < BOARD_SIZE; i++) {
@@ -1350,7 +1472,146 @@ void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, 
     reset_game_board(board);
 }//end reset_placement_phase
 
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, bool valid_position, int *orientation, ButtonData *button_data) {    // Handle SDL_QUIT event (e.g., user closes the window)
+void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected, bool *placed_ships, int *orientation, ButtonData *button_data, bool *invalid_click, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, Ship *ships) {
+    int x = event->button.x;
+    int y = event->button.y;
+
+    // Check if the user clicked on the exit button
+    if (is_mouse_inside_button(x, y, button_data->exit_button)) {
+        exit(0);
+    }//end if
+
+    // Check if the user clicked on the orientation button
+    if (is_mouse_inside_button(x, y, button_data->orientation_button)) {
+        *orientation = (*orientation + 1) % 2;
+    } else {
+        for (int i = 0; i < NUM_SHIPS; i++) {
+            if (placed_ships[i]) {
+                continue;
+            }//end if
+
+            int ship_size = ships[i].size;
+
+            // Loop through each segment of the ship
+            for (int j = 0; j < ship_size; j++) {
+                SDL_Rect ship_rect = {50 + j * CELL_SIZE, 50 + i * 50, CELL_SIZE, CELL_SIZE};
+                if (is_mouse_inside_button(x, y, ship_rect)) {
+                    *ship_selected = i;
+                    break;
+                }//end if
+            }//end for
+        }//end for
+    }//end else
+
+    // Check if the user clicked on the reset button
+    if (is_mouse_inside_button(x, y, button_data->reset_button)) {
+        reset_placement_phase(ships, placed_ships, ship_selected, orientation, &current_player->board);
+    }//end if
+
+    // Check if the user clicked on the "Random Board" button
+    if (is_mouse_inside_button(x, y, button_data->random_button)) {
+        place_random_ships(current_player, ships, placed_ships, ship_selected, orientation);
+    }//end if
+
+    // Check if the user clicked on the "Finish placement phase" button
+    if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
+        *running = 0;
+    }//end if
+
+    // Check if the user clicked on any button
+    bool clicked_on_button = is_mouse_inside_button(x, y, button_data->exit_button) ||
+                             is_mouse_inside_button(x, y, button_data->orientation_button) ||
+                             is_mouse_inside_button(x, y, button_data->reset_button) ||
+                             is_mouse_inside_button(x, y, button_data->random_button);
+
+    bool clicked_on_available_ship = false;
+
+    // Loop through each ship
+    for (int i = 0; i < NUM_SHIPS; i++) {
+
+        // Loop through each part of the ship
+        for (int j = 0; j < ships[i].size; j++) {
+            SDL_GetMouseState(&x, &y);
+            SDL_Rect hover_ship_rect = {50, 50 + i * 50, ships[i].size * CELL_SIZE, CELL_SIZE};
+            if (is_mouse_inside_button(x, y, hover_ship_rect)) {
+                clicked_on_available_ship = true;
+                break;
+            }//end if
+        }//end for
+    }//end for
+
+    // Update invalid_click only if the user clicked on an invalid position in placement mode (i.e., not on a button or a ship)
+    if (clicked_on_button || clicked_on_available_ship) {
+        *invalid_click = false;
+    } else if (*ship_selected >= 0) {
+        *invalid_click = !(*valid_position);
+    }//end else if
+
+    // Check if the user clicked on the grid
+    if (grid_mouse_x >= 0 && grid_mouse_x < BOARD_SIZE && grid_mouse_y >= 0 && grid_mouse_y < BOARD_SIZE) {
+
+        // Check if the user clicked on a placed ship
+        if (*ship_selected == -1) {
+            int clicked_ship_index = find_ship_at_position(current_player, grid_mouse_x, grid_mouse_y);
+
+            // Check if the user clicked on a placed ship
+            if (clicked_ship_index >= 0 && placed_ships[clicked_ship_index]) {
+                Ship *clicked_ship = &ships[clicked_ship_index];
+                remove_ship_from_board(&current_player->board, clicked_ship, clicked_ship->x, clicked_ship->y, clicked_ship->orientation);
+                placed_ships[clicked_ship_index] = false;
+                *ship_selected = clicked_ship_index;
+            }//end if
+        }//end if
+
+        // Check if the user clicked on a valid position and if a ship is selected
+        if (*ship_selected >= 0 && !placed_ships[*ship_selected] && *valid_position) {
+            current_player->ships[*ship_selected].size = ships[*ship_selected].size;
+            place_ship(&current_player->board, &current_player->ships[*ship_selected], grid_mouse_x, grid_mouse_y, *orientation);
+            placed_ships[*ship_selected] = true; // Set the ship as placed
+
+            // Update player's ships
+            current_player->ships_remaining++;
+            current_player->ships[*ship_selected].hit_count = 0;
+
+            *ship_selected = -1;
+        }//end if
+    }//end if
+}//end handle_placement_mouse_button_down
+
+void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bool *placed_ships) {
+    int x = event->motion.x;
+    int y = event->motion.y;
+
+    // Check if the user is hovering over the orientation button
+    if (is_mouse_inside_button(x, y, button_data->orientation_button)) {
+        button_data->hover_orientation = 1;
+    } else {
+        button_data->hover_orientation = 0;
+    }//end else
+
+    // Check if the user is hovering over the reset button
+    if (is_mouse_inside_button(x, y, button_data->reset_button)) {
+        button_data->hover_reset = 1;
+    } else {
+        button_data->hover_reset = 0;
+    }//end else
+
+    // Check if the user is hovering over the "Random Board" button
+    if (is_mouse_inside_button(x, y, button_data->random_button)) {
+        button_data->hover_random = 1;
+    } else {
+        button_data->hover_random = 0;
+    }//end else
+
+    // Check if the user is hovering over the "Finish placement phase" button
+    if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
+        button_data->hover_finish = 1;
+    } else {
+        button_data->hover_finish = 0;
+    }//end else
+}//end handle_placement_mouse_motion
+
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, int *orientation, bool *invalid_click, ButtonData *button_data) {
     // Handle SDL_QUIT event (e.g., user closes the window)
     if (event->type == SDL_QUIT) {
         *running = 0;
@@ -1358,99 +1619,18 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
 
     // Handle mouse button press event
     else if (event->type == SDL_MOUSEBUTTONDOWN) {
-        int x = event->button.x;
-        int y = event->button.y;
-
-        // Check if the user clicked on the exit button
-        if (is_mouse_inside_button(x, y, button_data->exit_button)) {
-            *running = 0;
-        }//end if
-
-        // Check if the user clicked on the orientation button
-        if (is_mouse_inside_button(x, y, button_data->orientation_button)) {
-            *orientation = (*orientation + 1) % 2;
-        } else {
-            // Check if the user clicked on a ship
-            for (int i = 0; i < NUM_SHIPS; i++) {
-                if (placed_ships[i]) {
-                    continue;
-                }//end if
-
-                int ship_size = ships[i].size;
-
-                // Loop through each segment of the ship
-                for (int j = 0; j < ship_size; j++) {
-                    SDL_Rect ship_rect = {50 + j * CELL_SIZE, 50 + i * 50, CELL_SIZE, CELL_SIZE};
-                    if (is_mouse_inside_button(x, y, ship_rect)) {
-                        *ship_selected = i;
-                        break;
-                    }//end if
-                }//end for
-            }//end for
-        }//end else
-
-        // Check if the user clicked on the reset button
-        if (is_mouse_inside_button(x, y, button_data->reset_button)) {
-            reset_placement_phase(ships, placed_ships, ship_selected, orientation, &current_player->board);
-        }//end if
-
-        // Check if the user clicked on the "Random Board" button
-        if (is_mouse_inside_button(x, y, button_data->random_button)) {
-            place_random_ships(current_player, ships, placed_ships, ship_selected, orientation);
-        }//end if
-
-        // Check if the user clicked on the "Finish placement phase" button
-        if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
-            *running = 0;
-        }//end if
+        handle_placement_mouse_button_down(event, running, current_player, ship_selected, placed_ships, orientation, button_data, invalid_click, grid_mouse_x, grid_mouse_y, valid_position, ships);
     }//end else if
 
     // Handle mouse motion event
     else if (event->type == SDL_MOUSEMOTION) {
-        int x = event->motion.x;
-        int y = event->motion.y;
-
-        // Check if the user is hovering over the orientation button
-        if (is_mouse_inside_button(x, y, button_data->orientation_button)) {
-            button_data->hover_orientation = 1;
-        } else {
-            button_data->hover_orientation = 0;
-        }//end else
-
-        // Check if the user is hovering over the reset button
-        if (is_mouse_inside_button(x, y, button_data->reset_button)) {
-            button_data->hover_reset = 1;
-        } else {
-            button_data->hover_reset = 0;
-        }//end else
-
-        if (is_mouse_inside_button(x, y, button_data->random_button)) {
-            button_data->hover_random = 1;
-        } else {
-            button_data->hover_random = 0;
-        }//end else
-
-        // Check if the user is hovering over the "Finish placement phase" button
-        if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
-            button_data->hover_finish = 1;
-        } else {
-            button_data->hover_finish = 0;
-        }//end else
+        handle_placement_mouse_motion(event, button_data, placed_ships);
     }//end else if
 
-    // Check if the user clicked on the grid
-    if (grid_mouse_x >= 0 && grid_mouse_x < BOARD_SIZE && grid_mouse_y >= 0 && grid_mouse_y < BOARD_SIZE) {
-        if (valid_position && event->type == SDL_MOUSEBUTTONDOWN && *ship_selected >= 0 && !placed_ships[*ship_selected]) {
-            place_ship(&current_player->board, &ships[*ship_selected], grid_mouse_x, grid_mouse_y, *orientation);
-            placed_ships[*ship_selected] = true; // Set the ship as placed
-
-            // Update player's ships
-            current_player->ships[*ship_selected] = ships[*ship_selected];
-            current_player->ships_remaining++;
-
-            *ship_selected = -1;
-        }//end if
-    }//end if
+    // Handle mouse button up event
+    else if (event->type == SDL_MOUSEBUTTONUP) {
+        *invalid_click = false;
+    }//end else if
 }//end handle_placement_phase_event
 
 void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Player *current_player) {
@@ -1471,6 +1651,9 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
     int hover_reset = 0;
     int hover_random = 0;
     int hover_finish = 0;
+    bool invalid_click = false;
+    bool placed_ships[NUM_SHIPS] = {false};
+    current_player->ships_remaining = 0;
 
     initialize_game_board(&current_player->board);
 
@@ -1481,7 +1664,7 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
     SDL_Rect random_button = {50, 500, 275, 50};
     SDL_Rect finish_button = {425, 400, 275, 50};
 
-    // Initialize the struct
+    // Initialize the button data struct
     ButtonData button_data = {
             exit_button,
             orientation_button,
@@ -1495,14 +1678,7 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
     };
 
     // Initialize ships
-    Ship ships[NUM_SHIPS] = {
-            {CARRIER,     5, 0, 0, 0},
-            {BATTLESHIP,  4, 0, 0, 0},
-            {DESTROYER,   3, 0, 0, 0},
-            {SUBMARINE,   3, 0, 0, 0},
-            {PATROL_BOAT, 2, 0, 0, 0}
-    };
-    bool placed_ships[NUM_SHIPS] = {false};
+    initialize_ships(current_player);
 
     // Main loop for the placement_phase_screen
     bool running = 1;
@@ -1514,11 +1690,11 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
         SDL_GetMouseState(&mouse_x, &mouse_y);
         int grid_mouse_x = (mouse_x - 400) / CELL_SIZE;
         int grid_mouse_y = (mouse_y - 50) / CELL_SIZE;
-        bool valid_position = is_position_valid(current_player, ships[ship_selected].size, grid_mouse_x, grid_mouse_y, orientation);
+        bool valid_position = is_position_valid(current_player, current_player->ships[ship_selected].size, grid_mouse_x, grid_mouse_y, orientation);
 
         // Handle events
         while (SDL_PollEvent(&event)) {
-            handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, ships, current_player, grid_mouse_x, grid_mouse_y, valid_position, &orientation, &button_data);
+            handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, current_player->ships, current_player, grid_mouse_x, grid_mouse_y, &valid_position, &orientation, &invalid_click, &button_data);
         }//end while
 
         // Clear screen
@@ -1529,10 +1705,10 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
         SDL_RenderCopy(renderer, background_texture, NULL, NULL);
 
         // Render the ships on the left side of the screen
-        render_placement_ships_left_side(renderer, textures, ships, placed_ships, black_texture, ship_selected);
+        render_placement_ships_left_side(renderer, textures, current_player->ships, placed_ships, black_texture, ship_selected);
 
         // Render the grid and the ships on the grid (if any).
-        render_placement_grid_ships(renderer, textures, ships, placed_ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y, valid_position);
+        render_placement_grid_ships(renderer, textures, current_player->ships, placed_ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y, valid_position);
 
         // Render exit option
         render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
@@ -1540,6 +1716,10 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
         // Render the buttons
         render_placement_buttons(renderer, &button_data, placed_ships, orientation, black_texture);
 
+        // Render invalid position border
+        if (invalid_click) {
+            render_invalid_position_border(renderer);
+        }//end if
         // Render the screen
         SDL_RenderPresent(renderer);
     }//end while
