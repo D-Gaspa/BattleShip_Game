@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include "pcg_basic.h"
@@ -97,9 +98,13 @@ typedef enum {
     DESTROY
 } AI_State;
 
-// Global variables for font and font size
-TTF_Font *font = NULL;
-int font_size = 24;
+typedef struct {
+    SDL_Renderer *renderer;
+    GameTextures *textures;
+    Player *computer;
+    Player *opponent;
+    volatile bool *should_render;
+} RenderThreadData;
 
 // Function prototypes
 
@@ -161,10 +166,11 @@ SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filep
 ///
 /// \param renderer A pointer to an SDL_Renderer.
 /// \param text A string representing the text to be rendered.
+/// \param font A pointer to an SDL_Font.
 /// \param x The x-coordinate of the text's position.
 /// \param y The y-coordinate of the text's position.
 /// \return void
-void render_text(SDL_Renderer *renderer, const char *text, int x, int y);
+void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y);
 
 /// \brief Renders colored text using the global font variable.
 ///
@@ -172,13 +178,14 @@ void render_text(SDL_Renderer *renderer, const char *text, int x, int y);
 ///
 /// \param renderer A pointer to an SDL_Renderer.
 /// \param text A string representing the text to be rendered.
+/// \param font A pointer to an SDL_Font.
 /// \param x The x-coordinate of the text's position.
 /// \param y The y-coordinate of the text's position.
 /// \param r The red component of the text color.
 /// \param g The green component of the text color.
 /// \param b The blue component of the text color.
 /// \return void
-void render_colored_text(SDL_Renderer *renderer, const char *text, int x, int y, int r, int g, int b);
+void render_colored_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y, int r, int g, int b);
 
 /// \brief Determines if the mouse is inside a button.
 ///
@@ -220,19 +227,21 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
 ///
 /// \param renderer A pointer to an SDL_Renderer.
 /// \param background_frames An array of SDL_Texture pointers for the animated background frames.
+/// \param font A pointer to an SDL_Font.
 /// \param frame_counter An int representing the current frame of the animated background.
 /// \param button_rects An array of SDL_Rect structures representing the main menu buttons.
 /// \param hover_button An int representing the index of the button being hovered.
 /// \return void
-void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, int frame_counter, SDL_Rect *button_rects, int hover_button);
+void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter, SDL_Rect *button_rects, int hover_button);
 
 /// \brief Executes the main menu loop.
 ///
 /// Handles user interaction and rendering for the main menu until the user selects an option or closes the window.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \return MainMenuOption Returns the selected option from the main menu (NEW_GAME, LOAD, or EXIT).
-MainMenuOption main_menu(SDL_Renderer *renderer);
+MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font);
 
 /// \brief Initializes the game board.
 ///
@@ -388,10 +397,11 @@ void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button);
 /// on the orientation button based on the current orientation value.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param orientation_button An SDL_Rect representing the button's position and size.
 /// \param orientation An int representing the current orientation.
 /// \return void
-void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button, int orientation);
+void render_orientation_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int orientation);
 
 /// \brief Renders the orientation button during the ship placement phase.
 ///
@@ -399,11 +409,12 @@ void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button
 /// phase, including its hover state, shadow, and orientation text.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param orientation_button An SDL_Rect representing the button's position and size.
 /// \param hover_orientation A bool indicating whether the mouse is hovering over the button.
 /// \param orientation An int representing the current orientation.
 /// \return void
-void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orientation_button, int hover_orientation, int orientation);
+void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int hover_orientation, int orientation);
 
 /// \brief Renders the "Restart the board" button during the ship placement phase.
 ///
@@ -411,10 +422,11 @@ void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orient
 /// including its hover state, shadow, and reset text.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param reset_button An SDL_Rect representing the button's position and size.
 /// \param hover_reset A bool indicating whether the mouse is hovering over the button.
 /// \return void
-void render_placement_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button, bool hover_reset);
+void render_placement_reset_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect reset_button, bool hover_reset);
 
 /// \brief Renders the "Randomize the board" button during the ship placement phase.
 ///
@@ -422,10 +434,11 @@ void render_placement_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button
 /// button color based on whether the mouse is hovering over the button.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param random_button An SDL_Rect representing the button's position and size.
 /// \param hover_random A bool indicating whether the mouse is hovering over the button.
 /// \return void
-void render_placement_random_button(SDL_Renderer *renderer, SDL_Rect random_button, bool hover_random);
+void render_placement_random_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect random_button, bool hover_random);
 
 /// \brief Renders the "Finish placing ships" button during the ship placement phase.
 ///
@@ -434,12 +447,13 @@ void render_placement_random_button(SDL_Renderer *renderer, SDL_Rect random_butt
 /// have been placed.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param finish_button An SDL_Rect representing the button's position and size.
 /// \param hover_finish A bool indicating whether the mouse is hovering over the button.
 /// \param placed_ships An array of booleans indicating whether each ship has been placed.
 /// \param black_texture A pointer to an SDL_Texture representing the black texture.
 /// \return void
-void render_placement_finish_button(SDL_Renderer *renderer, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture);
+void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture);
 
 /// \brief Renders the buttons during the ship placement phase.
 ///
@@ -447,12 +461,13 @@ void render_placement_finish_button(SDL_Renderer *renderer, SDL_Rect finish_butt
 /// the board, and finishing the ship placement phase.
 ///
 /// \param renderer A pointer to an SDL_Renderer.
+/// \param font A pointer to an SDL_Font.
 /// \param button_data A pointer to a ButtonData structure holding button information.
 /// \param placed_ships An array of booleans indicating whether each ship has been placed.
 /// \param orientation An int representing the current orientation.
 /// \param black_texture A pointer to an SDL_Texture representing the black texture.
 /// \return void
-void render_placement_buttons(SDL_Renderer *renderer ,ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture);
+void render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture);
 
 /// \brief Renders the grid background during the ship placement phase.
 ///
@@ -652,7 +667,7 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
 /// \param current_player A pointer to a Player structure representing the current player.
 ///
 /// \return void
-void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Player *current_player);
+void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player);
 
 /// \brief Places ships for the computer player.
 ///
@@ -722,20 +737,22 @@ void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture
 /// This function renders the "Finish turn" button with a hover effect and text.
 ///
 /// \param renderer The SDL_Renderer to draw on.
+/// \param font The TTF_Font to be used for the text.
 /// \param finish_turn_button An SDL_Rect containing the position and dimensions of the "Finish turn" button.
 /// \param hover_finish_turn A boolean representing whether the mouse is hovering over the "Finish turn" button.
 /// \return void
-void render_finish_turn_button(SDL_Renderer *renderer, SDL_Rect finish_turn_button, bool hover_finish_turn);
+void render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn);
 
 /// \brief Render the remaining ships count for both players.
 ///
 /// This function renders the text displaying the remaining ships count for both the current player and the opponent.
 ///
 /// \param renderer The SDL_Renderer to draw on.
+/// \param font The TTF_Font to be used for the text.
 /// \param current_player A pointer to the Player structure containing the current player's remaining ships data.
 /// \param opponent A pointer to the Player structure containing the opponent's remaining ships data.
 /// \return void
-void render_remaining_ships_text(SDL_Renderer *renderer, Player *current_player, Player *opponent);
+void render_remaining_ships_text(SDL_Renderer *renderer, TTF_Font *font, Player *current_player, Player *opponent);
 
 /// \brief Update the hit count of a ship and check if it is sunk.
 ///
@@ -761,9 +778,10 @@ void update_window_title(SDL_Window *window, int current_player_num);
 /// This function displays the winner message, indicating which player has won the game.
 ///
 /// \param renderer The SDL_Renderer to draw on.
+/// \param font The TTF_Font to be used for the text.
 /// \param winner_player_num The player number of the winner.
 /// \return void
-void show_winner_message(SDL_Renderer *renderer, int winner_player_num);
+void show_winner_message(SDL_Renderer *renderer, TTF_Font *font, int winner_player_num);
 
 /// \brief Handle mouse button down events during the game.
 ///
@@ -771,11 +789,12 @@ void show_winner_message(SDL_Renderer *renderer, int winner_player_num);
 ///
 /// \param renderer The SDL_Renderer to draw on.
 /// \param textures A pointer to the GameTextures structure containing necessary textures.
+/// \param font The TTF_Font to be used for the text.
 /// \param running A pointer to a boolean representing whether the game is running.
 /// \param current_player A pointer to the Player structure containing the current player's data.
 /// \param opponent A pointer to the Player structure containing the opponent's data.
 /// \return void
-void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, bool *running, Player *current_player, Player *opponent);
+void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running, Player *current_player, Player *opponent);
 
 /// \brief Handle mouse button up events during the game.
 ///
@@ -799,6 +818,7 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
 /// \param event A pointer to the SDL_Event structure to be processed.
 /// \param renderer The SDL_Renderer to draw on.
 /// \param textures A pointer to the GameTextures structure containing necessary textures.
+/// \param font The TTF_Font to be used for the text.
 /// \param current_player A pointer to the Player structure containing the current player's data.
 /// \param opponent A pointer to the Player structure containing the opponent's data.
 /// \param running A pointer to a boolean that indicates whether the game is still running.
@@ -808,7 +828,7 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
 /// \param window The SDL_Window whose title needs to be updated.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state);
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state);
 
 /// \brief Shuffles the direction indices array.
 ///
@@ -825,11 +845,12 @@ void shuffle_directions(int *dir_indices);
 ///
 /// \param renderer A pointer to the SDL_Renderer used for rendering the game.
 /// \param textures A pointer to the GameTextures structure containing all the game textures.
+/// \param font A pointer to the TTF_Font used for rendering text.
 /// \param computer A pointer to the Player structure representing the computer player.
 /// \param opponent A pointer to the Player structure representing the human player.
 /// \param ai_state A pointer to the AI_State enumeration, which represents the current state of the AI (SEARCH, TARGET, DESTROY).
 /// \return void
-void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player *computer, Player *opponent, AI_State *ai_state);
+void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state);
 
 /// \brief The game screen loop.
 ///
@@ -838,12 +859,13 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player
 /// \param renderer The SDL_Renderer used for drawing.
 /// \param window The SDL_Window whose title needs to be updated.
 /// \param textures A pointer to the GameTextures structure containing the game's textures.
+/// \param font A pointer to the TTF_Font used for rendering text.
 /// \param player1 A pointer to the Player structure containing player 1's data.
 /// \param player2 A pointer to the Player structure containing player 2's data.
 /// \param current_turn A pointer to an integer that indicates the current player's turn.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
+void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
 
 /// \brief Frees resources and performs cleanup before exiting the game.
 ///
@@ -852,10 +874,10 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 ///
 /// \param textures Pointer to the GameTextures structure to be freed.
 /// \param renderer Pointer to the SDL_Renderer to be destroyed.
-/// \param window Pointer to the SDL_Window to be destroyed.
 /// \param font Pointer to the TTF_Font to be closed.
+/// \param window Pointer to the SDL_Window to be destroyed.
 /// \return void
-void cleanup(GameTextures *textures, SDL_Renderer *renderer, SDL_Window *window);
+void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window);
 
 int main() {
     // Initialize SDL and SDL_image
@@ -897,6 +919,9 @@ int main() {
         exit(2);
     }//end if
 
+    TTF_Font *font = NULL;
+    int font_size = 24;
+
     // Open the font
     font = TTF_OpenFont("Assets/Fonts/cambria.ttc", font_size);
     if (font == NULL) {
@@ -918,10 +943,10 @@ int main() {
     player2.remaining_ships = NUM_SHIPS;
 
     // Create main menu
-    MainMenuOption menu_option = main_menu(renderer);
+    MainMenuOption menu_option = main_menu(renderer, font);
     if (menu_option == MAIN_MENU_EXIT) {
         // Exit the game
-        cleanup(textures, renderer, window);
+        cleanup(textures, renderer, font, window);
         return 0;
     } else if (menu_option == MAIN_MENU_LOAD) {
         AI_State ai_state;
@@ -959,7 +984,7 @@ int main() {
             ai_state = SEARCH;
         }//end if
 
-        game_screen(renderer, window, textures, &player1, &player2, &current_turn, &ai_state);
+        game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
     } else if (menu_option == MAIN_MENU_NEW_GAME_PVP) {
         SDL_DestroyRenderer(renderer); // Destroy the renderer for the main menu
         SDL_DestroyWindow(window);     // Destroy the window for the main menu
@@ -992,12 +1017,12 @@ int main() {
         player1.is_human = true;
         player2.is_human = true;
 
-        placement_phase_screen(renderer, textures, &player1);
+        placement_phase_screen(renderer, textures, font, &player1);
 
         if (player1.remaining_ships != 5) {
             // Player 1 did not place all ships
             printf("Player 1 did not place all ships.\n");
-            cleanup(textures, renderer, window);
+            cleanup(textures, renderer, font, window);
             return -1;
         }//end if
 
@@ -1029,12 +1054,12 @@ int main() {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
         }//end if
-        placement_phase_screen(renderer, textures, &player2);
+        placement_phase_screen(renderer, textures, font, &player2);
 
         if (player2.remaining_ships != 5) {
             // Player 1 did not place all ships
             printf("Player 1 did not place all ships.\n");
-            cleanup(textures, renderer, window);
+            cleanup(textures, renderer, font, window);
             return -1;
         }//end if
 
@@ -1071,7 +1096,7 @@ int main() {
         // Seed the random number generator
         pcg32_srandom(time(NULL), (intptr_t) &main);
 
-        game_screen(renderer, window, textures, &player1, &player2, &current_turn, NULL);
+        game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, NULL);
     } else if (menu_option == MAIN_MENU_NEW_GAME_PVC) {
         SDL_DestroyRenderer(renderer); // Destroy the renderer for the main menu
         SDL_DestroyWindow(window);     // Destroy the window for the main menu
@@ -1103,12 +1128,12 @@ int main() {
         player1.is_human = true;
         player2.is_human = false;
 
-        placement_phase_screen(renderer, textures, &player1);
+        placement_phase_screen(renderer, textures, font, &player1);
 
         if (player1.remaining_ships != 5) {
             // Player 1 did not place all ships
             printf("Player 1 did not place all ships.\n");
-            cleanup(textures, renderer, window);
+            cleanup(textures, renderer, font, window);
             return -1;
         }//end if
 
@@ -1146,11 +1171,11 @@ int main() {
 
         AI_State ai_state = SEARCH;
 
-        game_screen(renderer, window, textures, &player1, &player2, &current_turn, &ai_state);
+        game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
     }//end else if
 
     // Cleanup and exit
-    cleanup(textures, renderer, window);
+    cleanup(textures, renderer, font, window);
     return 0;
 }//end main
 
@@ -1253,7 +1278,7 @@ SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filep
     return textures;
 }//end load_animated_background
 
-void render_text(SDL_Renderer *renderer, const char *text, int x, int y) {
+void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y) {
     // Set the text color
     SDL_Color color = {0, 0, 0, 255}; // Black
 
@@ -1286,7 +1311,7 @@ void render_text(SDL_Renderer *renderer, const char *text, int x, int y) {
     SDL_FreeSurface(text_surface);
 }//end render_text
 
-void render_colored_text(SDL_Renderer *renderer, const char *text, int x, int y, int r, int g, int b) {
+void render_colored_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y, int r, int g, int b) {
     // Set the text color
     SDL_Color color = {r, g, b, 255};
 
@@ -1371,7 +1396,7 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
     return running;
 }//end handle_main_menu_events
 
-void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, int frame_counter, SDL_Rect *button_rects, int hover_button) {
+void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter, SDL_Rect *button_rects, int hover_button) {
     // Render the animated background
     SDL_RenderCopy(renderer, background_frames[frame_counter], NULL, NULL);
 
@@ -1397,11 +1422,11 @@ void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, i
         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
         SDL_RenderFillRect(renderer, &shadow_rect);
         // Render button label
-        render_text(renderer, button_labels[i], button_rects[i].x + 24, button_rects[i].y + 8);
+        render_text(renderer, button_labels[i], font, button_rects[i].x + 24, button_rects[i].y + 8);
     }//end for
 }//end render_main_menu
 
-MainMenuOption main_menu(SDL_Renderer *renderer) {
+MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font) {
     MainMenuOption selected_option = MAIN_MENU_EXIT;
 
     // Initialize main menu
@@ -1427,7 +1452,7 @@ MainMenuOption main_menu(SDL_Renderer *renderer) {
 
         // Render the main menu
         frame_counter = (frame_counter + 1) % num_background_frames;
-        render_main_menu(renderer, background_frames, frame_counter, button_rects, hover_button);
+        render_main_menu(renderer, background_frames, font, frame_counter, button_rects, hover_button);
 
         // Render the screen
         SDL_RenderPresent(renderer);
@@ -1653,16 +1678,16 @@ void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button) {
     SDL_RenderFillRect(renderer, &shadow_rect);
 }//end render_button_shadow
 
-void render_orientation_text(SDL_Renderer *renderer, SDL_Rect orientation_button, int orientation) {
+void render_orientation_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int orientation) {
     // Render the appropriate text based on the orientation value
     if (orientation == 0) {
-        render_text(renderer, "Orientation: Horizontal", orientation_button.x + 24, orientation_button.y + 10);
+        render_text(renderer, "Orientation: Horizontal", font, orientation_button.x + 24, orientation_button.y + 10);
     } else {
-        render_text(renderer, "Orientation: Vertical", orientation_button.x + 24, orientation_button.y + 10);
+        render_text(renderer, "Orientation: Vertical", font, orientation_button.x + 24, orientation_button.y + 10);
     }//end else
 }//end render_orientation_text
 
-void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orientation_button, int hover_orientation, int orientation) {
+void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int hover_orientation, int orientation) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_orientation);
 
@@ -1673,10 +1698,10 @@ void render_placement_orientation_button(SDL_Renderer *renderer, SDL_Rect orient
     render_button_shadow(renderer, orientation_button);
 
     // Render orientation text
-    render_orientation_text(renderer, orientation_button, orientation);
+    render_orientation_text(renderer, font, orientation_button, orientation);
 }//end render_placement_orientation_button
 
-void render_placement_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button, bool hover_reset) {
+void render_placement_reset_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect reset_button, bool hover_reset) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_reset);
 
@@ -1687,10 +1712,10 @@ void render_placement_reset_button(SDL_Renderer *renderer, SDL_Rect reset_button
     render_button_shadow(renderer, reset_button);
 
     // Render reset text
-    render_text(renderer, "Restart the board", reset_button.x + 24, reset_button.y + 10);
+    render_text(renderer, "Restart the board", font, reset_button.x + 24, reset_button.y + 10);
 }//end render_placement_reset_button
 
-void render_placement_random_button(SDL_Renderer *renderer, SDL_Rect random_button, bool hover_random) {
+void render_placement_random_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect random_button, bool hover_random) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_random);
 
@@ -1701,10 +1726,10 @@ void render_placement_random_button(SDL_Renderer *renderer, SDL_Rect random_butt
     render_button_shadow(renderer, random_button);
 
     // Render random text
-    render_text(renderer, "Randomize the board", random_button.x + 24, random_button.y + 10);
+    render_text(renderer, "Randomize the board", font, random_button.x + 24, random_button.y + 10);
 }//end render_placement_random_button
 
-void render_placement_finish_button(SDL_Renderer *renderer, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture) {
+void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_finish);
 
@@ -1717,28 +1742,28 @@ void render_placement_finish_button(SDL_Renderer *renderer, SDL_Rect finish_butt
     // Check if all ships have been placed
     if (all_ships_placed(placed_ships)) {
         // Render finish text
-        render_text(renderer, "Finish placing ships", finish_button.x + 24, finish_button.y + 10);
+        render_text(renderer, "Finish placing ships", font, finish_button.x + 24, finish_button.y + 10);
     } else {
         // Render black texture
         SDL_RenderCopy(renderer, black_texture, NULL, &finish_button);
 
         // Render finish text with a different color
-        render_colored_text(renderer, "Finish placing ships", finish_button.x + 24, finish_button.y + 10, 255, 255, 255);
+        render_colored_text(renderer, "Finish placing ships", font, finish_button.x + 24, finish_button.y + 10, 255, 255, 255);
     }//end else
 }//end render_placement_finish_button
 
-void render_placement_buttons(SDL_Renderer *renderer ,ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture) {
+void render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture) {
     // Render the orientation button
-    render_placement_orientation_button(renderer, button_data->orientation_button, button_data->hover_orientation, orientation);
+    render_placement_orientation_button(renderer, font, button_data->orientation_button, button_data->hover_orientation, orientation);
 
     // Render reset button
-    render_placement_reset_button(renderer, button_data->reset_button, button_data->hover_reset);
+    render_placement_reset_button(renderer, font, button_data->reset_button, button_data->hover_reset);
 
     // Render random button
-    render_placement_random_button(renderer, button_data->random_button, button_data->hover_random);
+    render_placement_random_button(renderer, font, button_data->random_button, button_data->hover_random);
 
     // Render finish button
-    render_placement_finish_button(renderer, button_data->finish_button, button_data->hover_finish, placed_ships, black_texture);
+    render_placement_finish_button(renderer, font, button_data->finish_button, button_data->hover_finish, placed_ships, black_texture);
 }//end render_placement_buttons
 
 void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int ship_selected) {
@@ -2101,7 +2126,7 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
     }//end while
 }//end handle_placement_phase_event
 
-void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Player *current_player) {
+void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player) {
     // Load background texture
     SDL_Texture *background_texture = IMG_LoadTexture(renderer, "Assets/selecting_screen_background.jpg");
 
@@ -2177,10 +2202,10 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, Play
         render_placement_grid_ships(renderer, textures, current_player->ships, placed_ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y, valid_position);
 
         // Render exit option
-        render_text(renderer, "Exit", exit_button.x + 25, exit_button.y + 10);
+        render_text(renderer, "Exit", font, exit_button.x + 25, exit_button.y + 10);
 
         // Render the buttons
-        render_placement_buttons(renderer, &button_data, placed_ships, orientation, black_texture);
+        render_placement_buttons(renderer, font, &button_data, placed_ships, orientation, black_texture);
 
         // Render invalid position border
         if (invalid_click) {
@@ -2289,7 +2314,7 @@ void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture
     }//end for
 }//end render_game_hover_effect
 
-void render_finish_turn_button(SDL_Renderer *renderer, SDL_Rect finish_turn_button, bool hover_finish_turn) {
+void render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_finish_turn);
 
@@ -2300,21 +2325,21 @@ void render_finish_turn_button(SDL_Renderer *renderer, SDL_Rect finish_turn_butt
     render_button_shadow(renderer, finish_turn_button);
 
     // Render finish text
-    render_text(renderer, "Finish turn", finish_turn_button.x + 24, finish_turn_button.y + 10);
+    render_text(renderer, "Finish turn", font, finish_turn_button.x + 24, finish_turn_button.y + 10);
 }//end render_finish_turn_button
 
-void render_remaining_ships_text(SDL_Renderer *renderer, Player *current_player, Player *opponent) {
+void render_remaining_ships_text(SDL_Renderer *renderer, TTF_Font *font, Player *current_player, Player *opponent) {
     char text_buffer[50];
     int text_y = 100 + BOARD_SIZE * CELL_SIZE + 10;
 
     // Render remaining ships text for the current player
     snprintf(text_buffer, sizeof(text_buffer), "Remaining ships: %d", current_player->remaining_ships);
-    render_colored_text(renderer, text_buffer, 50, text_y, 255, 255, 255);
+    render_colored_text(renderer, text_buffer, font, 50, text_y, 255, 255, 255);
 
     // Render remaining ships text for the opponent
     snprintf(text_buffer, sizeof(text_buffer), "Remaining ships: %d", opponent->remaining_ships);
     int text_x = 2 * 50 + BOARD_SIZE * CELL_SIZE;
-    render_colored_text(renderer, text_buffer, text_x, text_y, 255, 255, 255);
+    render_colored_text(renderer, text_buffer, font, text_x, text_y, 255, 255, 255);
 }//end render_remaining_ships_text
 
 bool update_hit_count(Player *player, int ship_index) {
@@ -2336,17 +2361,17 @@ void update_window_title(SDL_Window *window, int current_player_num) {
     SDL_SetWindowTitle(window, title);
 }//end update_window_title
 
-void show_winner_message(SDL_Renderer *renderer, int winner_player_num) {
+void show_winner_message(SDL_Renderer *renderer, TTF_Font *font, int winner_player_num) {
     // Create the winner message
     char message[50];
     sprintf(message, "Player %d won!", winner_player_num);
 
     // Render the winner message
     SDL_Color color = {255, 255, 255, 255};
-    render_colored_text(renderer, message, 300, 500, color.r, color.g, color.b);
+    render_colored_text(renderer, message, font, 300, 500, color.r, color.g, color.b);
 }//end show_winner_message
 
-void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, bool *running, Player *current_player, Player *opponent) {
+void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running, Player *current_player, Player *opponent) {
     // Get the mouse position
     int mouse_x, mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -2388,7 +2413,7 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
     if (opponent->remaining_ships == 0) {
         // Show winning message
         int winner_player_num = current_player->is_turn ? 1 : 2;
-        show_winner_message(renderer, winner_player_num);
+        show_winner_message(renderer, font, winner_player_num);
         render_game_boards(renderer, textures, current_player, opponent);
         SDL_RenderPresent(renderer);
         SDL_Delay(3000); // Wait for 3 seconds before closing the game
@@ -2423,7 +2448,7 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
     }//end if
 }//end handle_game_mouse_button_up
 
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state) {
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state) {
     // Handle game screen events
     while (SDL_PollEvent(event)) {
         switch (event->type) {
@@ -2435,7 +2460,7 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
             // Handle mouse button down event
             case SDL_MOUSEBUTTONDOWN:
                 if (event->button.button == SDL_BUTTON_LEFT && current_player->is_human) {
-                    handle_game_mouse_button_down(renderer, textures, running, current_player, opponent);
+                    handle_game_mouse_button_down(renderer, textures, font, running, current_player, opponent);
                 }//end else if
                 break;
 
@@ -2458,7 +2483,7 @@ void shuffle_directions(int *dir_indices) {
     }//end for
 }//end shuffle_directions
 
-void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player *computer, Player *opponent, AI_State *ai_state) {
+void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state) {
     // Initialize static variables for AI's state
     static int min_gap = 1;
     static int attempts = 0;
@@ -2485,7 +2510,7 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player
     bool all_smaller_ships_destroyed = true;
 
     // Calculate the minimum gap size between the ships (the minimum gap is the size of the smallest ship that is not destroyed - 1)
-    for (int i = 0; i < NUM_SHIPS; i++) {
+    for (int i = 4; i >= 0; i--) {
         if (opponent->ships[i].size < min_gap && !destroyed_ships[i]) {
             min_gap = opponent->ships[i].size - 1;
         }//end if
@@ -2740,17 +2765,17 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player
 
     // If all opponent's ships are sunk, show the winner message
     if (opponent->remaining_ships == 0) {
-        show_winner_message(renderer, 2);
+        show_winner_message(renderer, font, 2);
     }//end if
 
     // Render the game boards one last time and wait for a second
     render_game_boards(renderer, textures, opponent, computer);
-    render_remaining_ships_text(renderer, opponent, computer);
+    render_remaining_ships_text(renderer, font, opponent, computer);
     SDL_RenderPresent(renderer);
     SDL_Delay(1000); // Delay for 1 second
 }//end handle_computer_turn
 
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
+void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
     // Load background texture
     SDL_Texture *background_texture = IMG_LoadTexture(renderer, "Assets/game_screen_background.jpeg");
 
@@ -2793,7 +2818,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 
         // Check if it is the computer's turn and handle it
         if (current_player->is_human == false) {
-            handle_computer_turn(renderer, textures, current_player, opponent, ai_state);
+            handle_computer_turn(renderer, textures, font, current_player, opponent, ai_state);
             if (opponent->remaining_ships == 0) {
                 break;
             }//end if
@@ -2801,7 +2826,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
             opponent->is_turn = !opponent->is_turn;
         } else {
             // Render remaining ships text for both players
-            render_remaining_ships_text(renderer, current_player, opponent);
+            render_remaining_ships_text(renderer, font, current_player, opponent);
         }//end else
 
         // Get mouse position
@@ -2833,11 +2858,11 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 
         // Render the save button
         SDL_Color save_button_color = hover_save ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
-        render_colored_text(renderer, "Save", save_button.x, save_button.y, save_button_color.r, save_button_color.g, save_button_color.b);
+        render_colored_text(renderer, "Save", font, save_button.x, save_button.y, save_button_color.r, save_button_color.g, save_button_color.b);
 
         // Render the exit button
         SDL_Color exit_button_color = hover_exit ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
-        render_colored_text(renderer, "Exit", exit_button.x, exit_button.y, exit_button_color.r, exit_button_color.g, exit_button_color.b);
+        render_colored_text(renderer, "Exit", font, exit_button.x, exit_button.y, exit_button_color.r, exit_button_color.g, exit_button_color.b);
 
         // Check if the mouse is hovering over the exit button
         hover_exit = is_mouse_inside_button(mouse_x, mouse_y, exit_button);
@@ -2848,7 +2873,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
             hover_finish_turn = is_mouse_inside_button(mouse_x, mouse_y, finish_turn_button);
 
             // Render the "Finish turn" button
-            render_finish_turn_button(renderer, finish_turn_button, hover_finish_turn);
+            render_finish_turn_button(renderer, font, finish_turn_button, hover_finish_turn);
         }//end if
 
         // Update the screen
@@ -2856,7 +2881,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
 
         // Handle game screen events
-        handle_game_screen_events(&event, renderer, textures, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, window, ai_state);
+        handle_game_screen_events(&event, renderer, textures, font, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, window, ai_state);
 
         // Change the current turn
         if (current_player->is_turn == false) {
@@ -2871,7 +2896,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
     SDL_DestroyTexture(background_texture);
 }//end game_screen
 
-void cleanup(GameTextures *textures, SDL_Renderer *renderer, SDL_Window *window) {
+void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window) {
     free(textures);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
