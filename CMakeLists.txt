@@ -13,7 +13,7 @@ set(SDL2_TTF_INCLUDE_DIRS "SDL/SDL2_ttf/x86_64-w64-mingw32/include/SDL2")
 set(SDL2_TTF_LIBRARY_DIRS "SDL/SDL2_ttf/x86_64-w64-mingw32/lib")
 
 include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include)
-link_directories(${SDL2_LIBRARY_DIRS} ${SDL2_IMAGE_LIBRARY_DIRS} ${SDL2_TTF_LIBRARY_DIRS})
+link_directories(${SDL2_LIBRARY_DIRS} ${SDL2_IMAGE_LIBRARY_DIRS} ${SDL2_TTF_LIBRARY_DIRS} ${PROJECT_SOURCE_DIR}/lib)
 
 add_executable(BattleShip_Game
         main.c

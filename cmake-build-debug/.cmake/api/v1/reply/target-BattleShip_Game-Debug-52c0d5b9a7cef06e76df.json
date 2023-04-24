@@ -129,6 +129,11 @@
 				"role" : "libraryPath"
 			},
 			{
+				"backtrace" : 2,
+				"fragment" : "-LC:\\Users\\diego\\CLionProjects\\BattleShip_Game\\lib",
+				"role" : "libraryPath"
+			},
+			{
 				"backtrace" : 3,
 				"fragment" : "-lSDL2_image",
 				"role" : "libraries"
