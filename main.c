@@ -112,8 +112,9 @@ int font_size = 24;
 /// \param player1 Pointer to the first player's data.
 /// \param player2 Pointer to the second player's data.
 /// \param current_turn Integer representing the current turn (1 or 2).
+/// \param ai_state Pointer to an AI_State representing the current state of the AI.
 /// \return true if the game state is saved successfully, false otherwise.
-bool save_game(Player *player1, Player *player2, int current_turn);
+bool save_game(Player *player1, Player *player2, int current_turn, AI_State *ai_state);
 
 /// \brief Load the game state from a file.
 ///
@@ -123,8 +124,9 @@ bool save_game(Player *player1, Player *player2, int current_turn);
 /// \param player1 Pointer to the first player's data.
 /// \param player2 Pointer to the second player's data.
 /// \param current_turn Pointer to an integer that will store the loaded current turn value (1 or 2).
+/// \param ai_state Pointer to an AI_State that will store the loaded AI state.
 /// \return true if the game state is loaded successfully, false otherwise.
-bool load_game(Player *player1, Player *player2, int *current_turn);
+bool load_game(Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
 
 /// \brief Loads an SDL_Texture from a given file.
 ///
@@ -786,8 +788,9 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
 /// \param hover_save A pointer to a boolean representing whether the mouse is hovering over the "Save" button.
 /// \param hover_exit A pointer to a boolean representing whether the mouse is hovering over the "Exit" button.
 /// \param running A pointer to a boolean representing whether the game is running.
+/// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, SDL_Window *window, const bool *hover_save, const bool *hover_exit, bool *running);
+void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, SDL_Window *window, const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state);
 
 /// \brief Handle game screen events.
 ///
@@ -803,8 +806,18 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
 /// \param hover_save A pointer to a boolean indicating whether the mouse is hovering over the "Save game" button.
 /// \param hover_exit A pointer to a boolean indicating whether the mouse is hovering over the "Exit game" button.
 /// \param window The SDL_Window whose title needs to be updated.
+/// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window);
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state);
+
+/// \brief Shuffles the direction indices array.
+///
+/// The function shuffles the direction indices array in place using the Fisher-Yates algorithm.
+/// This helps to ensure that the AI selects directions randomly without repeating the same direction.
+///
+/// \param dir_indices A pointer to an array of integers representing the direction indices.
+/// \return void
+void shuffle_directions(int *dir_indices);
 
 /// \brief Executes the computer's turn in a Battleship game using a state-based AI strategy.
 ///
@@ -911,7 +924,8 @@ int main() {
         cleanup(textures, renderer, window);
         return 0;
     } else if (menu_option == MAIN_MENU_LOAD) {
-        bool load_success = load_game(&player1, &player2, &current_turn);
+        AI_State ai_state;
+        bool load_success = load_game(&player1, &player2, &current_turn, &ai_state);
         if (!load_success) {
             printf("Error loading saved game.\n");
             return -1;
@@ -940,7 +954,12 @@ int main() {
             printf("Failed to load game textures.\n");
             return -1;
         }//end if
-        game_screen(renderer, window, textures, &player1, &player2, &current_turn, NULL);
+
+        if (!player2.is_human) {
+            ai_state = SEARCH;
+        }//end if
+
+        game_screen(renderer, window, textures, &player1, &player2, &current_turn, &ai_state);
     } else if (menu_option == MAIN_MENU_NEW_GAME_PVP) {
         SDL_DestroyRenderer(renderer); // Destroy the renderer for the main menu
         SDL_DestroyWindow(window);     // Destroy the window for the main menu
@@ -1049,6 +1068,9 @@ int main() {
             return -1;
         }//end if
 
+        // Seed the random number generator
+        pcg32_srandom(time(NULL), (intptr_t) &main);
+
         game_screen(renderer, window, textures, &player1, &player2, &current_turn, NULL);
     } else if (menu_option == MAIN_MENU_NEW_GAME_PVC) {
         SDL_DestroyRenderer(renderer); // Destroy the renderer for the main menu
@@ -1134,34 +1156,36 @@ int main() {
 
 // Function definitions
 
-bool save_game(Player *player1, Player *player2, int current_turn) {
+bool save_game(Player *player1, Player *player2, int current_turn, AI_State *ai_state) {
     // Save the game state to a file ("saved_game.dat")
     FILE *save_file = fopen("saved_game.dat", "wb");
     if (save_file == NULL) {
         return false;
     }//end if
 
-    // Write player1, player2, and current_turn to the save file
+    // Write player1, player2, current_turn and ai_state to the save file
     fwrite(player1, sizeof(Player), 1, save_file);
     fwrite(player2, sizeof(Player), 1, save_file);
     fwrite(&current_turn, sizeof(int), 1, save_file);
+    fwrite(ai_state, sizeof(AI_State), 1, save_file);
 
     // Close the save file
     fclose(save_file);
     return true;
 }//end save_game
 
-bool load_game(Player *player1, Player *player2, int *current_turn) {
+bool load_game(Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
     // Load the game state from a file ("saved_game.dat")
     FILE *save_file = fopen("saved_game.dat", "rb");
     if (save_file == NULL) {
         return false;
     }//end if
 
-    // Read player1, player2, and current_turn from the save file
+    // Read player1, player2, current_turn, and ai_state from the save file
     fread(player1, sizeof(Player), 1, save_file);
     fread(player2, sizeof(Player), 1, save_file);
     fread(current_turn, sizeof(int), 1, save_file);
+    fread(ai_state, sizeof(AI_State), 1, save_file);
 
     // Close the save file
     fclose(save_file);
@@ -2372,7 +2396,7 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
     }//end if
 }//end handle_game_mouse_button_down
 
-void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, SDL_Window *window, const bool *hover_save, const bool *hover_exit, bool *running) {
+void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, SDL_Window *window, const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state) {
     // Get the mouse position
     int mouse_x, mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -2387,7 +2411,7 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
     }//end if
 
     if (*hover_save) {
-        if (save_game(current_player, opponent, current_player->is_turn ? 1 : 2)) {
+        if (save_game(current_player, opponent, current_player->is_turn ? 1 : 2, ai_state)) {
             printf("Game saved successfully!");
         } else {
             printf("Error saving game!");
@@ -2399,7 +2423,7 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
     }//end if
 }//end handle_game_mouse_button_up
 
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window) {
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, SDL_Window *window, AI_State *ai_state) {
     // Handle game screen events
     while (SDL_PollEvent(event)) {
         switch (event->type) {
@@ -2410,7 +2434,7 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
 
             // Handle mouse button down event
             case SDL_MOUSEBUTTONDOWN:
-                if (event->button.button == SDL_BUTTON_LEFT) {
+                if (event->button.button == SDL_BUTTON_LEFT && current_player->is_human) {
                     handle_game_mouse_button_down(renderer, textures, running, current_player, opponent);
                 }//end else if
                 break;
@@ -2418,78 +2442,224 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
             // Handle mouse button up event
             case SDL_MOUSEBUTTONUP:
                 if (event->button.button == SDL_BUTTON_LEFT) {
-                    handle_game_mouse_button_up(current_player, opponent, finish_turn_button, window, hover_save, hover_exit, running);
+                    handle_game_mouse_button_up(current_player, opponent, finish_turn_button, window, hover_save, hover_exit, running, ai_state);
                 }//end if
                 break;
         }//end switch
     }//end while
 }//end handle_game_screen_events
 
+void shuffle_directions(int *dir_indices) {
+    for (int i = 3; i > 0; i--) {
+        int j = (int) pcg32_boundedrand(i + 1);
+        int temp = dir_indices[i];
+        dir_indices[i] = dir_indices[j];
+        dir_indices[j] = temp;
+    }//end for
+}//end shuffle_directions
+
 void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player *computer, Player *opponent, AI_State *ai_state) {
-// Initialize static variables for AI's state
+    // Initialize static variables for AI's state
+    static int min_gap = 1;
+    static int attempts = 0;
+    static int direction = 0; // 0 for left, 1 for down, 2 for right, 3 for up
     static int last_hit_x = -1;
     static int last_hit_y = -1;
     static int initial_hit_x = -1;
     static int initial_hit_y = -1;
+    static int segments_found = 0;
+    static int destroyed_ships[NUM_SHIPS] = {0};
+    static bool direction_fully_explored = false;
     static int dx[] = {-1, 0, 1, 0};
     static int dy[] = {0, 1, 0, -1};
-    static int direction = 0;
+    static int dir_indices[] = {0, 1, 2, 3};
 
     // Declare variables for the current shot
-    int cell_x, cell_y;
-    bool shot_successful;
     int ship_index;
+    int cell_x, cell_y;
+
+    bool has_shot = false;
+    bool update_min_gap = false;
+    bool shot_successful = false;
+    bool valid_cell_found = false;
+    bool all_smaller_ships_destroyed = true;
+
+    // Calculate the minimum gap size between the ships (the minimum gap is the size of the smallest ship that is not destroyed - 1)
+    for (int i = 0; i < NUM_SHIPS; i++) {
+        if (opponent->ships[i].size < min_gap && !destroyed_ships[i]) {
+            min_gap = opponent->ships[i].size - 1;
+        }//end if
+    }//end for
+
+    // If all smaller ships are destroyed, increase the minimum gap by 1
+    for (int i = 0; i < NUM_SHIPS; i++) {
+        if (opponent->ships[i].size < min_gap + 1 && !destroyed_ships[i]) {
+            all_smaller_ships_destroyed = false;
+        }//end if
+    }//end for
+
+    if (all_smaller_ships_destroyed) {
+        min_gap++;
+    }//end if
 
     do {
-        int attempts = 0;
-        shot_successful = false;
-
         // Handle AI states (SEARCH, TARGET, DESTROY)
-        if (*ai_state == SEARCH) {
-            // Choose a random cell to shoot
-            pcg32_srandom(time(NULL), (intptr_t) &main);
-            cell_x = (int) pcg32_boundedrand(BOARD_SIZE);
-            cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
+        switch (*ai_state) {
+            case SEARCH:
+                // Reset variables
+                attempts = 0;
+                int search_attempts = 0;
+                // Shuffle the direction indices
+                shuffle_directions(dir_indices);
 
-        } else if (*ai_state == TARGET || *ai_state == DESTROY) {
-            bool valid_cell_found = false;
+                // Try to find a valid cell to shoot
+                while (!valid_cell_found && search_attempts < 100) {
+                    // Choose a random cell to shoot
+                    cell_x = (int) pcg32_boundedrand(BOARD_SIZE);
+                    cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
 
-            // Try to find a valid cell to shoot in the current direction
-            while (!valid_cell_found && attempts < 4) {
-                if (*ai_state == TARGET) {
-                    cell_x = initial_hit_x + dx[direction];
-                    cell_y = initial_hit_y + dy[direction];
-                } else { // *ai_state == DESTROY
-                    cell_x = last_hit_x + dx[direction];
-                    cell_y = last_hit_y + dy[direction];
-                }//end else
+                    // Check if the cell hasn't been hit before and if it meets the minimum gap requirement
+                    if (!opponent->board.cells[cell_x][cell_y].hit) {
+                        bool meets_gap_requirement = true;
 
-                // Check if the cell is within the board and hasn't been hit before
-                if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE &&
-                    !opponent->board.cells[cell_x][cell_y].hit) {
-                    valid_cell_found = true;
-                } else {
-                    // Change direction and retry
-                    direction = (direction + 1) % 4;
-                    attempts++;
+                        // Check if the cell meets the minimum gap requirement
+                        for (int i = 0; i < 4; i++) {
+                            int x = cell_x + dx[i];
+                            int y = cell_y + dy[i];
 
-                    // If DESTROY state is not successful after two attempts, revert to TARGET state
-                    if (attempts == 2 && *ai_state == DESTROY) {
-                        *ai_state = TARGET;
-                        last_hit_x = initial_hit_x;
-                        last_hit_y = initial_hit_y;
+                            // Check if the cell is within the board
+                            if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
+                                // Check if the cell has been hit before
+                                if (opponent->board.cells[x][y].hit) {
+                                    // Check if the cell meets the minimum gap requirement
+                                    if (opponent->board.cells[x][y].ship_index != -1) {
+                                        if (opponent->ships[opponent->board.cells[x][y].ship_index].size < min_gap) {
+                                            meets_gap_requirement = false;
+                                        }//end if
+                                    } else {
+                                        meets_gap_requirement = false;
+                                    }//end else
+                                }//end if
+                            }//end if
+                        }//end for
+
+                        if (meets_gap_requirement) {
+                            valid_cell_found = true;
+                        }//end if
                     }//end if
-                }//end else
-            }//end while
-        }//end else if
+                    search_attempts++;
+                }//end while
+
+                if (search_attempts == 100) {
+                    // If the AI can't find a valid cell to shoot, it will shoot randomly until it finds a valid cell
+                    do {
+                        // Choose a random cell to shoot
+                        cell_x = (int) pcg32_boundedrand(BOARD_SIZE);
+                        cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
+
+                        // Check if the cell hasn't been hit before
+                        if (!opponent->board.cells[cell_x][cell_y].hit) {
+                            valid_cell_found = true;
+                        }//end if
+                    } while (!valid_cell_found);
+                    printf("AI can't find a valid cell to shoot, shooting randomly\n");
+                }//end if
+                break;
+
+            case TARGET:
+            case DESTROY:
+                valid_cell_found = false;
+
+                // Try to find a valid cell to shoot in the current direction
+                while (!valid_cell_found && attempts < 4) {
+                    if (*ai_state == TARGET && !direction_fully_explored) {
+                        // Choose a random direction to shoot
+                        direction = dir_indices[attempts];
+                        cell_x = initial_hit_x + dx[direction];
+                        cell_y = initial_hit_y + dy[direction];
+                    } else { // *ai_state == DESTROY or direction_fully_explored
+                        cell_x = last_hit_x + dx[direction];
+                        cell_y = last_hit_y + dy[direction];
+                    }//end else
+
+                    // Check if the cell is within the board and hasn't been hit before
+                    if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE && !opponent->board.cells[cell_x][cell_y].hit) {
+                        valid_cell_found = true;
+                    } else {
+                        // Increment the attempts counter
+                        attempts++;
+
+                        if (*ai_state == DESTROY) {
+                            // If the AI has found the orientation and can't explore further in the first direction, explore the other direction
+                            if (!direction_fully_explored) {
+                                direction = (direction + 2) % 4;
+                                last_hit_x = initial_hit_x;
+                                last_hit_y = initial_hit_y;
+                                direction_fully_explored = true;
+                            }//end if
+
+                            // If DESTROY state is not successful after two attempts, revert to TARGET state
+                            if (attempts == 2) {
+                                *ai_state = TARGET;
+                                last_hit_x = initial_hit_x;
+                                last_hit_y = initial_hit_y;
+                            }//end if
+                        }//end if
+                    }//end else
+                }//end while
+
+                // If no valid cell is found in TARGET or DESTROY state, switch back to SEARCH state
+                if (!valid_cell_found && (*ai_state == TARGET || *ai_state == DESTROY)) {
+                    if (*ai_state == TARGET) {
+                        direction = (direction + 1) % 4; // Try the next direction
+                        attempts++; // Increment attempts count
+
+                        // If all directions have been tried, switch back to SEARCH state
+                        if (attempts >= 4) {
+                            *ai_state = SEARCH;
+                            attempts = 0;
+                            direction = 0;
+                            last_hit_x = -1;
+                            last_hit_y = -1;
+                            initial_hit_x = -1;
+                            initial_hit_y = -1;
+                            segments_found = 0;
+                            direction_fully_explored = false;
+                        }//end if
+                    } else { // *ai_state == DESTROY
+                        *ai_state = SEARCH;
+                        attempts = 0;
+                        direction = 0;
+                        last_hit_x = -1;
+                        last_hit_y = -1;
+                        initial_hit_x = -1;
+                        initial_hit_y = -1;
+                        segments_found = 0;
+                        direction_fully_explored = false;
+                    }//end else
+                    continue; // Continue with the next iteration of the do-while loop
+                }//end if
+
+                // If there's a sequence with more than 5 ship segments together, consider there's more than 1 ship there
+                if (segments_found > 5) {
+                    *ai_state = SEARCH;
+                    attempts = 0;
+                    direction = 0;
+                    last_hit_x = -1;
+                    last_hit_y = -1;
+                    initial_hit_x = -1;
+                    initial_hit_y = -1;
+                    segments_found = 0;
+                    direction_fully_explored = false;
+                }//end if
+                break;
+        }//end switch
 
         // If the chosen cell hasn't been hit before
         if (!opponent->board.cells[cell_x][cell_y].hit) {
             // Mark the cell as hit
             opponent->board.cells[cell_x][cell_y].hit = true;
-
-            // Render the game boards
-            render_game_boards(renderer, textures, opponent, computer);
+            has_shot = true;
 
             // If the cell is occupied by a ship
             if (opponent->board.cells[cell_x][cell_y].occupied) {
@@ -2497,15 +2667,21 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player
                 ship_index = opponent->board.cells[cell_x][cell_y].ship_index;
                 update_hit_count(opponent, ship_index);
                 shot_successful = true;
+                segments_found++;
+
+                // If the ship is sunk update destroyed_ships array
+                if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
+                    destroyed_ships[ship_index] = true;
+                }//end if
 
                 // Update AI state based on the current state
                 if (*ai_state == SEARCH) {
                     *ai_state = TARGET;
                     initial_hit_x = last_hit_x = cell_x;
                     initial_hit_y = last_hit_y = cell_y;
-                    direction = 0;
                 } else if (*ai_state == TARGET || *ai_state == DESTROY) {
                     if (*ai_state == TARGET) {
+                        // Update the state to DESTROY
                         *ai_state = DESTROY;
                     }//end if
                     last_hit_x = cell_x;
@@ -2515,42 +2691,62 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, Player
                 // If the ship is sunk, reset AI state to SEARCH
                 if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
                     *ai_state = SEARCH;
+                    attempts = 0;
+                    direction = 0;
                     last_hit_x = -1;
                     last_hit_y = -1;
                     initial_hit_x = -1;
                     initial_hit_y = -1;
-                    direction = 0;
-                    render_remaining_ships_text(renderer, opponent, computer);
+                    segments_found = 0;
+                    valid_cell_found = false;
+                    direction_fully_explored = false;
                 }//end if
 
                 // Render the game boards again
                 render_game_boards(renderer, textures, opponent, computer);
-
-                // Update the screen and wait for a second
                 SDL_RenderPresent(renderer);
                 SDL_Delay(1000); // Delay for 1 second
-
-                // If all opponent's ships are sunk, break the loop
-                if (opponent->remaining_ships == 0) {
-                    break;
-                }//end if
             } else {
-                // If the shot was unsuccessful, update AI state
+                // If the cell was not occupied by a ship, update AI state
                 shot_successful = false;
                 if (*ai_state == TARGET) {
-                    direction = (direction + 1) % 4;
+                    attempts++;
                 } else if (*ai_state == DESTROY) {
                     *ai_state = TARGET;
                     direction = (direction + 2) % 4; // Reverse direction
                     last_hit_x = initial_hit_x;
                     last_hit_y = initial_hit_y;
+                    direction_fully_explored = true;
                 }//end else if
             }//end else
-        }//end if
-    } while (shot_successful);
+        } else {
+            // If the shot was unsuccessful, update AI state
+            if (*ai_state == TARGET) {
+                direction = dir_indices[attempts];
+                attempts++;
+                direction_fully_explored = false;
+            } else if (*ai_state == DESTROY) {
+                *ai_state = TARGET;
+                direction = (direction + 2) % 4; // Reverse direction
+                last_hit_x = initial_hit_x;
+                last_hit_y = initial_hit_y;
+            }//end else if
+        }//end else
+    } while (shot_successful && opponent->remaining_ships > 0);
 
-// Render the game boards one last time and wait for a second
+    if (!has_shot) {
+        printf("This should never happen\n");
+    }//end if
+
+    // If all opponent's ships are sunk, show the winner message
+    if (opponent->remaining_ships == 0) {
+        show_winner_message(renderer, 2);
+    }//end if
+
+    // Render the game boards one last time and wait for a second
     render_game_boards(renderer, textures, opponent, computer);
+    render_remaining_ships_text(renderer, opponent, computer);
+    SDL_RenderPresent(renderer);
     SDL_Delay(1000); // Delay for 1 second
 }//end handle_computer_turn
 
@@ -2598,12 +2794,15 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         // Check if it is the computer's turn and handle it
         if (current_player->is_human == false) {
             handle_computer_turn(renderer, textures, current_player, opponent, ai_state);
+            if (opponent->remaining_ships == 0) {
+                break;
+            }//end if
             current_player->is_turn = !current_player->is_turn;
             opponent->is_turn = !opponent->is_turn;
-        }//end if
-
-        // Render remaining ships text for both players
-        render_remaining_ships_text(renderer, current_player, opponent);
+        } else {
+            // Render remaining ships text for both players
+            render_remaining_ships_text(renderer, current_player, opponent);
+        }//end else
 
         // Get mouse position
         int mouse_x, mouse_y;
@@ -2657,7 +2856,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
 
         // Handle game screen events
-        handle_game_screen_events(&event, renderer, textures, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, window);
+        handle_game_screen_events(&event, renderer, textures, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, window, ai_state);
 
         // Change the current turn
         if (current_player->is_turn == false) {
