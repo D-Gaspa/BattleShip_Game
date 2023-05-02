@@ -922,8 +922,8 @@ void handle_alarm_signal(int sig);
 /// \param player2 A pointer to the Player structure containing player 2's data.
 /// \param current_turn A pointer to an integer that indicates the current player's turn.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
-/// \return void
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
+/// \return bool A boolean indicating true if the player 1 won, false if the player 2 won.
+bool game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
 
 /// \brief Frees resources and performs cleanup before exiting the game.
 ///
@@ -938,7 +938,28 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window);
 
 int main() {
-    pid_t child_pid;
+    int player_wins, computer_wins;
+    pid_t child_pid = fork();
+
+    if (child_pid == 0) {
+        // Load stats
+        FILE *stats_file = fopen("stats.dat", "r");
+        if (stats_file == NULL) {
+            printf("Error: Could not open stats.dat\n");
+            return -1;
+        }//end if
+
+        // Read player wins and computer wins from stats.dat
+        fread(&player_wins, sizeof(int), 1, stats_file);
+        fread(&computer_wins, sizeof(int), 1, stats_file);
+        fclose(stats_file);
+        printf("Welcome to the Battleship game\n");
+        printf("Player wins: %d\n", player_wins);
+        printf("Computer wins: %d\n", computer_wins);
+
+        return 0;
+    }//end if
+    wait(NULL);
 
     // Initialize SDL and SDL_image
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -1202,11 +1223,32 @@ int main() {
 
         AI_State ai_state = SEARCH;
 
-        game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
+        bool player1_won = false;
+        player1_won = game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
+
+        if (player1_won) {
+            printf("Player 1 won!\n");
+            player_wins++;
+        } else {
+            printf("Computer won!\n");
+            computer_wins++;
+        }//end else
+        FILE *stats_file = fopen("stats.dat", "w");
+        if (stats_file == NULL) {
+            printf("Error: Could not open stats.dat\n");
+            return -1;
+        }//end if
+        fwrite(&player_wins, sizeof(int), 1, stats_file);
+        fwrite(&computer_wins, sizeof(int), 1, stats_file);
+        fclose(stats_file);
     }//end else if
 
     // Cleanup and exit
     cleanup(textures, renderer, font, window);
+    execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+    // If execl fails, print an error message and exit
+    perror("execl");
+    exit(EXIT_FAILURE);
     return 0;
 }//end main
 
@@ -2512,17 +2554,6 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
             }//end else
         }//end if
     }//end if
-
-    // Check if the game is over (no enemy ships remaining)
-    if (opponent->remaining_ships == 0) {
-        // Show winning message
-        int winner_player_num = current_player->is_turn ? 1 : 2;
-        show_winner_message(renderer, font, winner_player_num);
-        render_game_boards(renderer, textures, current_player, opponent);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(3000); // Wait for 3 seconds before closing the game
-        execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
-    }//end if
 }//end handle_game_mouse_button_down
 
 void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, SDL_Window *window, const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state) {
@@ -2948,7 +2979,7 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     hit_segments_count++;
                 }//end else if
 
-                SDL_Delay(500);
+                SDL_Delay(1000);
             } else {
                 // If the cell was not occupied by a ship, update AI state
                 shot_successful = false;
@@ -3003,7 +3034,7 @@ void handle_alarm_signal(int sig) {
     // This function will be called when the alarm goes off.
 }//end handle_alarm_signal
 
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
+bool game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
     // Load background texture
     SDL_Texture *background_texture = IMG_LoadTexture(renderer, "Assets/game_screen_background.jpeg");
 
@@ -3114,6 +3145,17 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         // Handle game screen events
         handle_game_screen_events(&event, renderer, textures, font, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, window, ai_state);
 
+        // Check if the game is over (no enemy ships remaining)
+        if (opponent->remaining_ships == 0) {
+            // Show winning message
+            int winner_player_num = current_player->is_turn ? 1 : 2;
+            show_winner_message(renderer, font, winner_player_num);
+            render_game_boards(renderer, textures, current_player, opponent);
+            SDL_RenderPresent(renderer);
+            SDL_Delay(3000);
+            return true;
+        }//end if
+
         // Change the current turn
         if (current_player->is_turn == false) {
             *current_turn = *current_turn == 1 ? 2 : 1;
@@ -3125,11 +3167,7 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
     SDL_FreeSurface(black_surface);
     SDL_DestroyTexture(black_texture);
     SDL_DestroyTexture(background_texture);
-
-    execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
-    // If execl fails, print an error message and exit
-    perror("execl");
-    exit(EXIT_FAILURE);
+    return false;
 }//end game_screen
 
 void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window) {
