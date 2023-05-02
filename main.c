@@ -12,6 +12,8 @@
 #include <SDL_image.h>
 #include "pcg_basic.h"
 #include <SDL_thread.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 // Define constants for the game
 #define NUM_SHIPS 5
@@ -95,8 +97,17 @@ typedef struct ButtonData {
 typedef enum {
     SEARCH,
     TARGET,
-    DESTROY
+    DESTROY,
+    REVISIT
 } AI_State;
+
+// Struct to store time data for the placement phase timer
+typedef struct {
+    int time_remaining;
+    SDL_Renderer *renderer;
+    TTF_Font *font;
+    pthread_mutex_t lock;
+} TimerData;
 
 typedef struct {
     SDL_Renderer *renderer;
@@ -104,7 +115,7 @@ typedef struct {
     Player *computer;
     Player *opponent;
     volatile bool *should_render;
-} RenderThreadData;
+} RenderComputerThreadData;
 
 // Function prototypes
 
@@ -233,6 +244,15 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
 /// \param hover_button An int representing the index of the button being hovered.
 /// \return void
 void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter, SDL_Rect *button_rects, int hover_button);
+
+/// \brief Handles signals for the main menu function
+///
+/// This function handles the SIGINT (Ctrl+C) and SIGTERM signals
+/// to gracefully exit the main menu when received.
+///
+/// \param signal The signal received by the function
+/// \return void
+void handle_main_menu_signal(int signal);
 
 /// \brief Executes the main menu loop.
 ///
@@ -634,7 +654,6 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
 /// \param placed_ships Pointer to a boolean array indicating which ships have been placed.
 void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bool *placed_ships);
 
-
 /// \brief Handle events during the placement phase of the game.
 ///
 /// This function handles various events like mouse clicks, mouse movements, and SDL_QUIT events
@@ -655,6 +674,26 @@ void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bo
 /// \param button_data A pointer to a ButtonData structure containing information about the buttons.
 /// \return void
 void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, int *orientation, bool *invalid_click, ButtonData *button_data);
+
+/// \brief Timer thread function
+///
+/// This function is responsible for decrementing the time remaining
+/// every second. It locks the mutex to access the shared TimerData struct
+/// and updates the time_remaining value.
+///
+/// \param arg A pointer to the TimerData struct
+/// \return void*
+void *timer_thread_func(void *arg);
+
+/// \brief Renders the timer on the screen
+///
+/// This function retrieves the current time remaining from the TimerData
+/// struct and renders it as text in the bottom-right corner of the screen.
+/// It locks the mutex to safely access the shared TimerData struct.
+///
+/// \param timer_data A pointer to the TimerData struct
+/// \return void
+void render_timer(TimerData *timer_data);
 
 /// \brief Displays and handles the ship placement phase screen for a battleship game.
 ///
@@ -836,8 +875,19 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
 /// This helps to ensure that the AI selects directions randomly without repeating the same direction.
 ///
 /// \param dir_indices A pointer to an array of integers representing the direction indices.
+/// \param size The size of the array.
 /// \return void
-void shuffle_directions(int *dir_indices);
+void shuffle_directions(int *dir_indices, int size);
+
+/// \brief Render thread function for continuously updating the game boards.
+///
+/// This function is meant to be executed in a separate thread to render the
+/// game boards and remaining ships text at a target frame rate of 60 FPS.
+///
+/// \param data A void pointer to a RenderThreadData structure containing the necessary data for rendering,
+/// including the renderer, textures, players, and a boolean flag to control the render loop.
+/// \return NULL upon successful completion of the render loop.
+void *render_computer_thread_func(void *data);
 
 /// \brief Executes the computer's turn in a Battleship game using a state-based AI strategy.
 ///
@@ -851,6 +901,14 @@ void shuffle_directions(int *dir_indices);
 /// \param ai_state A pointer to the AI_State enumeration, which represents the current state of the AI (SEARCH, TARGET, DESTROY).
 /// \return void
 void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state);
+
+/// \brief Handle the alarm signal.
+///
+/// This function handles the alarm signal, which is used to add a delay between the computer's turns.
+///
+/// \param sig The signal number.
+/// \return void
+void handle_alarm_signal(int sig);
 
 /// \brief The game screen loop.
 ///
@@ -880,6 +938,8 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window);
 
 int main() {
+    pid_t child_pid;
+
     // Initialize SDL and SDL_image
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
@@ -1009,16 +1069,12 @@ int main() {
             printf("Failed to load game textures.\n");
             return -1;
         }//end if
-        if (renderer == NULL) {
-            printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-            return -1;
-        }//end if
 
         player1.is_human = true;
         player2.is_human = true;
 
+        // Player 1 placement phase
         placement_phase_screen(renderer, textures, font, &player1);
-
         if (player1.remaining_ships != 5) {
             // Player 1 did not place all ships
             printf("Player 1 did not place all ships.\n");
@@ -1026,45 +1082,16 @@ int main() {
             return -1;
         }//end if
 
-        SDL_DestroyRenderer(renderer); // Destroy the renderer for player1
-        SDL_DestroyWindow(window);     // Destroy the window for player1
-
-        // Create a new window and renderer for player2
-        window = SDL_CreateWindow("Battleship - Player 2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  800, 600, SDL_WINDOW_SHOWN);
-        if (window == NULL) {
-            printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
-            return -1;
-        }//end if
-
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (renderer == NULL) {
-            printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-            return -1;
-        }//end if
-
-        // Load game textures
-        textures = load_game_textures(renderer);
-
-        if (textures == NULL) {
-            printf("Failed to load game textures.\n");
-            return -1;
-        }//end if
-        if (renderer == NULL) {
-            printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-            return -1;
-        }//end if
+        // Player 2 placement phase
+        SDL_SetWindowTitle(window, "Battleship - Player 2");
         placement_phase_screen(renderer, textures, font, &player2);
-
         if (player2.remaining_ships != 5) {
-            // Player 1 did not place all ships
-            printf("Player 1 did not place all ships.\n");
+            // Player 2 did not place all ships
+            printf("Player 2 did not place all ships.\n");
             cleanup(textures, renderer, font, window);
             return -1;
         }//end if
 
-        SDL_DestroyRenderer(renderer); // Destroy the renderer for player2
-        SDL_DestroyWindow(window);     // Destroy the window for player2
 
         // Create a new window
         window = SDL_CreateWindow("Battleship - Player 1", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -1134,7 +1161,11 @@ int main() {
             // Player 1 did not place all ships
             printf("Player 1 did not place all ships.\n");
             cleanup(textures, renderer, font, window);
-            return -1;
+
+            execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+            // If execl fails, print an error message and exit
+            perror("execl");
+            exit(EXIT_FAILURE);
         }//end if
 
         SDL_DestroyRenderer(renderer); // Destroy the renderer for player1
@@ -1426,8 +1457,19 @@ void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, T
     }//end for
 }//end render_main_menu
 
+void handle_main_menu_signal(int signal) {
+    if (signal == SIGINT || signal == SIGTERM) {
+        printf("Signal %d received. Exiting main menu.\n", signal);
+        exit(0);
+    }//end if
+}//end handle_main_menu_signal
+
 MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font) {
     MainMenuOption selected_option = MAIN_MENU_EXIT;
+
+    // Register signal handlers
+    signal(SIGINT, handle_main_menu_signal);
+    signal(SIGTERM, handle_main_menu_signal);
 
     // Initialize main menu
     int num_background_frames;
@@ -1996,7 +2038,7 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
 
     // Check if the user clicked on the "Finish placement phase" button
     if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
-        *running = 0;
+        *running = false;
     }//end if
 
     // Check if the user clicked on any button
@@ -2101,7 +2143,10 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
         switch (event->type) {
             // Handle SDL_QUIT evenT
             case SDL_QUIT:
-                *running = false;
+                execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+                // If execl fails, print an error message and exit
+                perror("execl");
+                exit(EXIT_FAILURE);
                 break;
 
             // Handle mouse button press event
@@ -2125,6 +2170,44 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
         }//end switch
     }//end while
 }//end handle_placement_phase_event
+
+void *timer_thread_func(void *arg) {
+    TimerData *data = (TimerData *)arg;
+
+    // Loop until the time runs out
+    while (data->time_remaining > 0) {
+        sleep(1);
+
+        // Lock the mutex and decrement the time remaining
+        pthread_mutex_lock(&data->lock);
+        data->time_remaining--;
+
+        // Unlock the mutex
+        pthread_mutex_unlock(&data->lock);
+    }//end while
+
+    // Set the time remaining to 0 if it's negative
+    if (data->time_remaining < 0) {
+        data->time_remaining = 0;
+    }//end if
+
+    return NULL;
+}//end timer_thread_func
+
+void render_timer(TimerData *timer_data) {
+    // Lock the mutex and get the time remaining
+    pthread_mutex_lock(&timer_data->lock);
+    int time_remaining = timer_data->time_remaining;
+
+    // Unlock the mutex
+    pthread_mutex_unlock(&timer_data->lock);
+
+    // Render the time remaining
+    char timer_text[64];
+    snprintf(timer_text, sizeof(timer_text), "Time left: %d", time_remaining);
+
+    render_colored_text(timer_data->renderer, timer_text, timer_data->font, 600, 500, 255, 255, 255); // Bottom-right position
+}//end render_timer
 
 void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player) {
     // Load background texture
@@ -2170,6 +2253,18 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
             hover_finish
     };
 
+    // Initialize the timer
+    TimerData timer_data = {
+            .time_remaining = 60,
+            .renderer = renderer,
+            .font = font,
+            .lock = PTHREAD_MUTEX_INITIALIZER,
+    };
+
+    // Create the timer thread
+    pthread_t timer_thread;
+    pthread_create(&timer_thread, NULL, timer_thread_func, &timer_data);
+
     // Initialize ships
     initialize_ships(current_player);
 
@@ -2207,6 +2302,9 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
         // Render the buttons
         render_placement_buttons(renderer, font, &button_data, placed_ships, orientation, black_texture);
 
+        // Render the timer
+        render_timer(&timer_data);
+
         // Render invalid position border
         if (invalid_click) {
             render_invalid_position_border(renderer);
@@ -2215,6 +2313,12 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
         // Render the screen
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
+
+        // Check if the timer reached zero and place remaining ships automatically
+        if (timer_data.time_remaining <= 0) {
+            place_random_ships(current_player, current_player->ships, placed_ships, &ship_selected, &orientation);
+            running = 0;
+        }//end if
     }//end while
 
     // Destroy textures
@@ -2417,7 +2521,7 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
         render_game_boards(renderer, textures, current_player, opponent);
         SDL_RenderPresent(renderer);
         SDL_Delay(3000); // Wait for 3 seconds before closing the game
-        *running = 0;
+        execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
     }//end if
 }//end handle_game_mouse_button_down
 
@@ -2444,7 +2548,10 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
     }//end if
 
     if (*hover_exit) {
-        *running = false;
+        execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+        // If execl fails, print an error message and exit
+        perror("execl");
+        exit(EXIT_FAILURE);
     }//end if
 }//end handle_game_mouse_button_up
 
@@ -2454,7 +2561,10 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
         switch (event->type) {
             // Handle SDL_QUIT event
             case SDL_QUIT:
-                *running = false;
+                execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+                // If execl fails, print an error message and exit
+                perror("execl");
+                exit(EXIT_FAILURE);
                 break;
 
             // Handle mouse button down event
@@ -2474,14 +2584,25 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
     }//end while
 }//end handle_game_screen_events
 
-void shuffle_directions(int *dir_indices) {
-    for (int i = 3; i > 0; i--) {
+void shuffle_directions(int *dir_indices, int size) {
+    for (int i = size - 1; i > 0; i--) {
         int j = (int) pcg32_boundedrand(i + 1);
         int temp = dir_indices[i];
         dir_indices[i] = dir_indices[j];
         dir_indices[j] = temp;
     }//end for
 }//end shuffle_directions
+
+void *render_computer_thread_func(void *data) {
+    RenderComputerThreadData *render_data = (RenderComputerThreadData *) data;
+
+    while (*(render_data->should_render)) {
+        render_game_boards(render_data->renderer, render_data->textures, render_data->opponent, render_data->computer);
+        SDL_RenderPresent(render_data->renderer);
+        SDL_Delay(16); // 60 FPS
+    }//end while
+    return NULL;
+}//end render_computer_thread_func
 
 void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state) {
     // Initialize static variables for AI's state
@@ -2492,56 +2613,77 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
     static int last_hit_y = -1;
     static int initial_hit_x = -1;
     static int initial_hit_y = -1;
-    static int segments_found = 0;
+    static bool is_revisit = false;
+    static bool first_revisit = true;
+    static int hit_segments_count = 0;
     static int destroyed_ships[NUM_SHIPS] = {0};
     static bool direction_fully_explored = false;
     static int dx[] = {-1, 0, 1, 0};
     static int dy[] = {0, 1, 0, -1};
+    static int hit_segments[5][2];
+    static int remaining_cells[BOARD_SIZE * BOARD_SIZE][2];
     static int dir_indices[] = {0, 1, 2, 3};
+    static int remaining_cells_count = BOARD_SIZE * BOARD_SIZE;
 
     // Declare variables for the current shot
     int ship_index;
     int cell_x, cell_y;
-
     bool has_shot = false;
     bool update_min_gap = false;
     bool shot_successful = false;
     bool valid_cell_found = false;
-    bool all_smaller_ships_destroyed = true;
+    volatile bool should_render = true;
+    RenderComputerThreadData render_data = {renderer, textures, computer, opponent, &should_render};
+    pthread_t render_computer_thread;
+    pthread_create(&render_computer_thread, NULL, render_computer_thread_func, (void *)&render_data);
 
-    // Calculate the minimum gap size between the ships (the minimum gap is the size of the smallest ship that is not destroyed - 1)
-    for (int i = 4; i >= 0; i--) {
-        if (opponent->ships[i].size < min_gap && !destroyed_ships[i]) {
-            min_gap = opponent->ships[i].size - 1;
-        }//end if
-    }//end for
-
-    // If all smaller ships are destroyed, increase the minimum gap by 1
-    for (int i = 0; i < NUM_SHIPS; i++) {
-        if (opponent->ships[i].size < min_gap + 1 && !destroyed_ships[i]) {
-            all_smaller_ships_destroyed = false;
-        }//end if
-    }//end for
-
-    if (all_smaller_ships_destroyed) {
-        min_gap++;
+    // Initialize remaining_cells array if it's the first computer's turn
+    if (remaining_cells_count == BOARD_SIZE * BOARD_SIZE) {
+        int index = 0;
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            for (int y = 0; y < BOARD_SIZE; y++) {
+                remaining_cells[index][0] = x;
+                remaining_cells[index][1] = y;
+                index++;
+            }//end for
+        }//end for
     }//end if
 
     do {
         // Handle AI states (SEARCH, TARGET, DESTROY)
         switch (*ai_state) {
+            SEARCH_CASE:
             case SEARCH:
+                // Check if there are segments of a ship that haven't been destroyed yet
+                if (hit_segments_count > 0) {
+                    *ai_state = REVISIT;
+                    goto REVISIT_CASE;
+                }//end if
+
                 // Reset variables
                 attempts = 0;
                 int search_attempts = 0;
+                is_revisit = false;
+
                 // Shuffle the direction indices
-                shuffle_directions(dir_indices);
+                shuffle_directions(dir_indices, 4);
+
+                // Create a temporary array for remaining cells
+                int (*temp_remaining_cells)[2] = malloc(remaining_cells_count * sizeof(int[2]));
+                memcpy(temp_remaining_cells, remaining_cells, remaining_cells_count * sizeof(int[2]));
+                int temp_remaining_cells_count = remaining_cells_count;
 
                 // Try to find a valid cell to shoot
-                while (!valid_cell_found && search_attempts < 100) {
-                    // Choose a random cell to shoot
-                    cell_x = (int) pcg32_boundedrand(BOARD_SIZE);
-                    cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
+                while (!valid_cell_found && search_attempts < remaining_cells_count) {
+                    // Choose a random cell to shoot from the temp_remaining_cells array
+                    int random_index = (int) pcg32_boundedrand(temp_remaining_cells_count);
+                    cell_x = temp_remaining_cells[random_index][0];
+                    cell_y = temp_remaining_cells[random_index][1];
+
+                    // Remove the cell from the temp_remaining_cells array and decrease the temp_remaining_cells_count
+                    temp_remaining_cells[random_index][0] = temp_remaining_cells[temp_remaining_cells_count - 1][0];
+                    temp_remaining_cells[random_index][1] = temp_remaining_cells[temp_remaining_cells_count - 1][1];
+                    temp_remaining_cells_count--;
 
                     // Check if the cell hasn't been hit before and if it meets the minimum gap requirement
                     if (!opponent->board.cells[cell_x][cell_y].hit) {
@@ -2570,12 +2712,22 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
 
                         if (meets_gap_requirement) {
                             valid_cell_found = true;
+
+                            // Remove the cell from the remaining_cells array and decrease the remaining_cells_count
+                            for (int i = 0; i < remaining_cells_count; i++) {
+                                if (remaining_cells[i][0] == cell_x && remaining_cells[i][1] == cell_y) {
+                                    remaining_cells[i][0] = remaining_cells[remaining_cells_count - 1][0];
+                                    remaining_cells[i][1] = remaining_cells[remaining_cells_count - 1][1];
+                                    remaining_cells_count--;
+                                    break;
+                                }//end if
+                            }//end for
                         }//end if
                     }//end if
                     search_attempts++;
                 }//end while
 
-                if (search_attempts == 100) {
+                if (search_attempts == temp_remaining_cells_count) {
                     // If the AI can't find a valid cell to shoot, it will shoot randomly until it finds a valid cell
                     do {
                         // Choose a random cell to shoot
@@ -2591,18 +2743,33 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                 }//end if
                 break;
 
+            TARGET_CASE:
             case TARGET:
             case DESTROY:
                 valid_cell_found = false;
 
                 // Try to find a valid cell to shoot in the current direction
                 while (!valid_cell_found && attempts < 4) {
-                    if (*ai_state == TARGET && !direction_fully_explored) {
+                    if (*ai_state == TARGET && !direction_fully_explored && !is_revisit) {
                         // Choose a random direction to shoot
                         direction = dir_indices[attempts];
                         cell_x = initial_hit_x + dx[direction];
                         cell_y = initial_hit_y + dy[direction];
-                    } else { // *ai_state == DESTROY or direction_fully_explored
+                    } else { // *ai_state == DESTROY, direction_fully_explored or is_revisit
+
+                        // Check if the direction has been fully explored to start revisiting
+                        if (direction_fully_explored && *ai_state == TARGET && attempts > 0) {
+                            *ai_state = REVISIT;
+                            goto REVISIT_CASE;
+                        }//end if
+
+                        // Check if the AI has not explored the other direction yet
+                        if (is_revisit && attempts == 1 && !direction_fully_explored) {
+                            // try the other direction
+                            direction = (direction + 2) % 4;
+                            direction_fully_explored = true;
+                        }//end if
+
                         cell_x = last_hit_x + dx[direction];
                         cell_y = last_hit_y + dy[direction];
                     }//end else
@@ -2614,22 +2781,13 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         // Increment the attempts counter
                         attempts++;
 
-                        if (*ai_state == DESTROY) {
+                        if (!direction_fully_explored && *ai_state == DESTROY) {
                             // If the AI has found the orientation and can't explore further in the first direction, explore the other direction
-                            if (!direction_fully_explored) {
-                                direction = (direction + 2) % 4;
-                                last_hit_x = initial_hit_x;
-                                last_hit_y = initial_hit_y;
-                                direction_fully_explored = true;
-                            }//end if
-
-                            // If DESTROY state is not successful after two attempts, revert to TARGET state
-                            if (attempts == 2) {
-                                *ai_state = TARGET;
-                                last_hit_x = initial_hit_x;
-                                last_hit_y = initial_hit_y;
-                            }//end if
-                        }//end if
+                            direction = (direction + 2) % 4;
+                            last_hit_x = initial_hit_x;
+                            last_hit_y = initial_hit_y;
+                            direction_fully_explored = true;
+                        }//end else
                     }//end else
                 }//end while
 
@@ -2648,7 +2806,6 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                             last_hit_y = -1;
                             initial_hit_x = -1;
                             initial_hit_y = -1;
-                            segments_found = 0;
                             direction_fully_explored = false;
                         }//end if
                     } else { // *ai_state == DESTROY
@@ -2659,32 +2816,76 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         last_hit_y = -1;
                         initial_hit_x = -1;
                         initial_hit_y = -1;
-                        segments_found = 0;
                         direction_fully_explored = false;
                     }//end else
                     continue; // Continue with the next iteration of the do-while loop
                 }//end if
+                break;
 
-                // If there's a sequence with more than 5 ship segments together, consider there's more than 1 ship there
-                if (segments_found > 5) {
-                    *ai_state = SEARCH;
+            REVISIT_CASE:
+            case REVISIT:
+                if (hit_segments_count > 0) {
+                    // Choose a random segment from the hit_segments array
+                    int random_index = (int) pcg32_boundedrand(hit_segments_count);
+                    cell_x = hit_segments[random_index][0];
+                    cell_y = hit_segments[random_index][1];
+
+                    // Remove the cell from the hit_segments array and decrease the hit_segments_count
+                    hit_segments[random_index][0] = hit_segments[hit_segments_count - 1][0];
+                    hit_segments[random_index][1] = hit_segments[hit_segments_count - 1][1];
+                    hit_segments_count--;
+
+                    // Set the initial hit coordinates and last hit coordinates to the cell coordinates
+                    initial_hit_x = last_hit_x = cell_x;
+                    initial_hit_y = last_hit_y = cell_y;
+
+                    static int dir_indices_revisit[2] = {0};
+
+                    // Choose a random direction based on the saved direction, but only for the first revisit
+                    if (first_revisit) {
+                        if (direction == 0 || direction == 2) {
+
+                            // If the direction is 0 or 2, the other directions are 1 and 3
+                            dir_indices_revisit[0] = 1;
+                            dir_indices_revisit[1] = 3;
+                            shuffle_directions(dir_indices_revisit, 2);
+
+                            // Choose a random direction from the other two
+                            direction = dir_indices_revisit[0];
+                        } else {
+                            // If the direction is 1 or 3, the other directions are 0 and 2
+                            dir_indices_revisit[0] = 0;
+                            dir_indices_revisit[1] = 2;
+                            shuffle_directions(dir_indices_revisit, 2);
+                            direction = dir_indices[0];
+                        }//end else
+                        first_revisit = false;
+                    } else {
+                        shuffle_directions(dir_indices_revisit, 2);
+                        direction = dir_indices_revisit[0];
+                    }//end else
+
+                    // Update the AI state to TARGET
+                    is_revisit = true;
+                    *ai_state = TARGET;
                     attempts = 0;
-                    direction = 0;
-                    last_hit_x = -1;
-                    last_hit_y = -1;
-                    initial_hit_x = -1;
-                    initial_hit_y = -1;
-                    segments_found = 0;
                     direction_fully_explored = false;
-                }//end if
+                    goto TARGET_CASE;
+                } else {
+                    // If there are no hit segments left to revisit, switch back to SEARCH state
+                    is_revisit = false;
+                    first_revisit = true;
+                    *ai_state = SEARCH;
+                    goto SEARCH_CASE;
+                }//end else
                 break;
         }//end switch
 
         // If the chosen cell hasn't been hit before
         if (!opponent->board.cells[cell_x][cell_y].hit) {
+            has_shot = true;
             // Mark the cell as hit
             opponent->board.cells[cell_x][cell_y].hit = true;
-            has_shot = true;
 
             // If the cell is occupied by a ship
             if (opponent->board.cells[cell_x][cell_y].occupied) {
@@ -2692,12 +2893,6 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                 ship_index = opponent->board.cells[cell_x][cell_y].ship_index;
                 update_hit_count(opponent, ship_index);
                 shot_successful = true;
-                segments_found++;
-
-                // If the ship is sunk update destroyed_ships array
-                if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
-                    destroyed_ships[ship_index] = true;
-                }//end if
 
                 // Update AI state based on the current state
                 if (*ai_state == SEARCH) {
@@ -2708,29 +2903,52 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     if (*ai_state == TARGET) {
                         // Update the state to DESTROY
                         *ai_state = DESTROY;
+                        attempts = 0;
                     }//end if
                     last_hit_x = cell_x;
                     last_hit_y = cell_y;
                 }//end else if
 
-                // If the ship is sunk, reset AI state to SEARCH
+                // If the ship is sunk, reset AI state to SEARCH,update destroyed_ships array and min gap
                 if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
+                    destroyed_ships[ship_index] = true;
+
+                    // Update min_gap when a ship is destroyed
+                    int smallest_ship_remaining = BOARD_SIZE + 1;
+                    for (int i = 0; i < NUM_SHIPS; i++) {
+                        if (!destroyed_ships[i] && opponent->ships[i].size < smallest_ship_remaining) {
+                            smallest_ship_remaining = opponent->ships[i].size;
+                        }//end if
+                    }//end for
+                    min_gap = smallest_ship_remaining - 1;
+
+                    if (!is_revisit) {
+                        // reset hit segments array
+                        for (int i = 0; i < hit_segments_count; i++) {
+                            hit_segments[i][0] = -1;
+                            hit_segments[i][1] = -1;
+                            hit_segments_count = 0;
+                        }//end for
+                        direction = 0;
+                    }//end if
+
+                    // Reset AI state
                     *ai_state = SEARCH;
                     attempts = 0;
-                    direction = 0;
                     last_hit_x = -1;
                     last_hit_y = -1;
                     initial_hit_x = -1;
                     initial_hit_y = -1;
-                    segments_found = 0;
                     valid_cell_found = false;
                     direction_fully_explored = false;
-                }//end if
+                } else if (!is_revisit) {
+                    // Add ship segments to the hit_segments array
+                    hit_segments[hit_segments_count][0] = cell_x;
+                    hit_segments[hit_segments_count][1] = cell_y;
+                    hit_segments_count++;
+                }//end else if
 
-                // Render the game boards again
-                render_game_boards(renderer, textures, opponent, computer);
-                SDL_RenderPresent(renderer);
-                SDL_Delay(1000); // Delay for 1 second
+                SDL_Delay(500);
             } else {
                 // If the cell was not occupied by a ship, update AI state
                 shot_successful = false;
@@ -2751,11 +2969,16 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                 attempts++;
                 direction_fully_explored = false;
             } else if (*ai_state == DESTROY) {
-                *ai_state = TARGET;
-                direction = (direction + 2) % 4; // Reverse direction
-                last_hit_x = initial_hit_x;
-                last_hit_y = initial_hit_y;
+                if (direction_fully_explored) {
+                    *ai_state = REVISIT;
+                } else {
+                    *ai_state = TARGET;
+                    direction = (direction + 2) % 4; // Reverse direction
+                    last_hit_x = initial_hit_x;
+                    last_hit_y = initial_hit_y;
+                }//end else
             }//end else if
+            shot_successful = false;
         }//end else
     } while (shot_successful && opponent->remaining_ships > 0);
 
@@ -2769,11 +2992,16 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
     }//end if
 
     // Render the game boards one last time and wait for a second
+    should_render = false;
+    pthread_join(render_computer_thread, NULL);
     render_game_boards(renderer, textures, opponent, computer);
     render_remaining_ships_text(renderer, font, opponent, computer);
     SDL_RenderPresent(renderer);
-    SDL_Delay(1000); // Delay for 1 second
 }//end handle_computer_turn
+
+void handle_alarm_signal(int sig) {
+    // This function will be called when the alarm goes off.
+}//end handle_alarm_signal
 
 void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
     // Load background texture
@@ -2819,6 +3047,9 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         // Check if it is the computer's turn and handle it
         if (current_player->is_human == false) {
             handle_computer_turn(renderer, textures, font, current_player, opponent, ai_state);
+            signal(SIGALRM, handle_alarm_signal);
+            alarm(1);
+            pause();
             if (opponent->remaining_ships == 0) {
                 break;
             }//end if
@@ -2894,6 +3125,11 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
     SDL_FreeSurface(black_surface);
     SDL_DestroyTexture(black_texture);
     SDL_DestroyTexture(background_texture);
+
+    execl("./BattleShip_Game", "./BattleShip_Game", (char *)NULL);
+    // If execl fails, print an error message and exit
+    perror("execl");
+    exit(EXIT_FAILURE);
 }//end game_screen
 
 void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window) {
