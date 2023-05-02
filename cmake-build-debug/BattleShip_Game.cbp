@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="BattleShip_Game"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="BattleShip_Game">
+				<Option output="/home/wan/CLionProjects/BattleShip_Game_Linux/BattleShip_Game" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/libs/local/include"/>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/libs/local/include/SDL2"/>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/12/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 BattleShip_Game"/>
+					<CompileFile command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="BattleShip_Game/fast">
+				<Option output="/home/wan/CLionProjects/BattleShip_Game_Linux/BattleShip_Game" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/libs/local/include"/>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/libs/local/include/SDL2"/>
+					<Add directory="/home/wan/CLionProjects/BattleShip_Game_Linux/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/12/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 BattleShip_Game/fast"/>
+					<CompileFile command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j4 -f &quot;/home/wan/CLionProjects/BattleShip_Game_Linux/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/wan/CLionProjects/BattleShip_Game_Linux/main.c">
+			<Option target="BattleShip_Game"/>
+		</Unit>
+		<Unit filename="/home/wan/CLionProjects/BattleShip_Game_Linux/pcg_basic.c">
+			<Option target="BattleShip_Game"/>
+		</Unit>
+		<Unit filename="/home/wan/CLionProjects/BattleShip_Game_Linux/pcg_basic.h">
+			<Option target="BattleShip_Game"/>
+		</Unit>
+		<Unit filename="/home/wan/CLionProjects/BattleShip_Game_Linux/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
