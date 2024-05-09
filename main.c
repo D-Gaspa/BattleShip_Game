@@ -860,6 +860,20 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
 /// \return void
 void shuffle_directions(int *dir_indices, int size);
 
+
+/**
+ * @brief Removes a cell from the remaining_cells array.
+ *
+ * This function searches for a given cell (x, y) in the remaining_cells array and removes it by replacing it
+ * with the last cell in the array. It also decreases the count of remaining cells.
+ *
+ * @param x The x-coordinate of the cell to be removed.
+ * @param y The y-coordinate of the cell to be removed.
+ * @param remaining_cells A pointer to the array of remaining cells.
+ * @param remaining_cells_count A pointer to the count of remaining cells.
+ */
+void remove_cell(int x, int y, int (*remaining_cells)[2], int *remaining_cells_count);
+
 /// \brief Executes the computer's turn in a Battleship game using a state-based AI strategy.
 ///
 /// Handles the computer's turn in the game using AI, which follows a state-based strategy (SEARCH, TARGET, DESTROY).
@@ -2540,6 +2554,22 @@ void shuffle_directions(int *dir_indices, int size) {
     }
 }
 
+void remove_cell(int x, int y, int (*remaining_cells)[2], int *remaining_cells_count) {
+    // Find the cell in the array
+    for (int i = 0; i < *remaining_cells_count; i++) {
+        if (remaining_cells[i][0] == x && remaining_cells[i][1] == y) {
+            // Replace the cell with the last cell in the array
+            remaining_cells[i][0] = remaining_cells[*remaining_cells_count - 1][0];
+            remaining_cells[i][1] = remaining_cells[*remaining_cells_count - 1][1];
+
+            // Decrease the count of remaining cells
+            (*remaining_cells_count)--;
+
+            break;
+        }
+    }
+}
+
 void
 handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent,
                      AI_State *ai_state) {
@@ -2618,49 +2648,40 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                     temp_remaining_cells[random_index][1] = temp_remaining_cells[temp_remaining_cells_count - 1][1];
                     temp_remaining_cells_count--;
 
-                    // Check if the cell hasn't been hit before and if it meets the minimum gap requirement
-                    if (!opponent->board.cells[cell_x][cell_y].hit) {
-                        bool meets_gap_requirement = true;
+                    // Check if the cell meets the minimum gap requirement.
+                    // The minimum gap requirement means
+                    // that the cell must have a minimum gap of 1 cell from any hit cell
+                    bool meets_gap_requirement = true;
 
+                    for (int i = 0; i < 4; i++) {
+                        int x = cell_x + dx[i];
+                        int y = cell_y + dy[i];
+
+                        // Check if the cell is within the board and hasn't been hit before
+                        if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) continue;
+                        if (!opponent->board.cells[x][y].hit) continue;
                         // Check if the cell meets the minimum gap requirement
-                        for (int i = 0; i < 4; i++) {
-                            int x = cell_x + dx[i];
-                            int y = cell_y + dy[i];
-
-                            // Check if the cell is within the board and hasn't been hit before
-                            if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) continue;
-                            if (!opponent->board.cells[x][y].hit) continue;
-                            // Check if the cell meets the minimum gap requirement
-                            if (opponent->board.cells[x][y].ship_index != -1) {
-                                if (opponent->ships[opponent->board.cells[x][y].ship_index].size >= min_gap) continue;
-                                meets_gap_requirement = false;
-                            } else {
-                                meets_gap_requirement = false;
-                            }
+                        if (opponent->board.cells[x][y].ship_index != -1) {
+                            if (opponent->ships[opponent->board.cells[x][y].ship_index].size >= min_gap) continue;
+                            meets_gap_requirement = false;
+                        } else {
+                            meets_gap_requirement = false;
                         }
+                    }
 
-                        if (meets_gap_requirement) {
-                            valid_cell_found = true;
-
-                            // Remove the cell from the remaining_cells array and decrease the remaining_cells_count
-                            for (int i = 0; i < remaining_cells_count; i++) {
-                                if (remaining_cells[i][0] != cell_x || remaining_cells[i][1] != cell_y) continue;
-                                remaining_cells[i][0] = remaining_cells[remaining_cells_count - 1][0];
-                                remaining_cells[i][1] = remaining_cells[remaining_cells_count - 1][1];
-                                remaining_cells_count--;
-                                break;
-                            }
-                        }
+                    if (meets_gap_requirement) {
+                        valid_cell_found = true;
                     }
                     search_attempts++;
                 }
 
-                if (search_attempts == temp_remaining_cells_count) {
+                if (search_attempts == temp_remaining_cells_count && !valid_cell_found) {
                     // If the AI can't find a valid cell to shoot, it will shoot randomly until it finds a valid cell
                     do {
-                        // Choose a random cell to shoot
-                        cell_x = (int) pcg32_boundedrand(BOARD_SIZE);
-                        cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
+                        // Choose a random cell from the remaining_cells array
+                        int random_index = (int) pcg32_boundedrand(remaining_cells_count);
+                        cell_x = remaining_cells[random_index][0];
+                        cell_y = remaining_cells[random_index][1];
 
                         // Check if the cell hasn't been hit before
                         if (opponent->board.cells[cell_x][cell_y].hit) continue;
@@ -2812,6 +2833,9 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
             // Mark the cell as hit
             opponent->board.cells[cell_x][cell_y].hit = true;
             has_shot = true;
+
+            // Remove the cell from the remaining_cells array
+            remove_cell(cell_x, cell_y, remaining_cells, &remaining_cells_count);
 
             // If the cell is occupied by a ship
             if (opponent->board.cells[cell_x][cell_y].occupied) {
