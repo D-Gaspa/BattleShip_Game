@@ -99,6 +99,29 @@ typedef enum {
     REVISIT
 } AI_State;
 
+// Struct to store the context of the AI
+typedef struct AI_Context {
+    bool initialized;
+    int min_gap;
+    int attempts;
+    int direction;
+    int last_hit_x;
+    int last_hit_y;
+    int initial_hit_x;
+    int initial_hit_y;
+    bool is_revisit;
+    bool first_revisit;
+    int hit_segments_count;
+    int destroyed_ships[NUM_SHIPS];
+    bool direction_fully_explored;
+    int dx[4];
+    int dy[4];
+    int hit_segments[5][2];
+    int remaining_cells[BOARD_SIZE * BOARD_SIZE][2];
+    int dir_indices[4];
+    int remaining_cells_count;
+} AI_Context;
+
 // Function prototypes
 
 /// \brief Save the current game state to a file.
@@ -873,6 +896,16 @@ void shuffle_directions(int *dir_indices, int size);
  * @param remaining_cells_count A pointer to the count of remaining cells.
  */
 void remove_cell(int x, int y, int (*remaining_cells)[2], int *remaining_cells_count);
+
+/**
+ * @brief Initializes the AI context with default values.
+ *
+ * This function sets the initial values for all the fields in the AI_Context structure.
+ * The AI_Context structure stores the context of the AI.
+ *
+ * @param ctx Pointer to the AI_Context structure to be initialized.
+ */
+void initialize_ai_context(AI_Context* ctx);
 
 /// \brief Executes the computer's turn in a Battleship game using a state-based AI strategy.
 ///
@@ -2570,28 +2603,42 @@ void remove_cell(int x, int y, int (*remaining_cells)[2], int *remaining_cells_c
     }
 }
 
+void initialize_ai_context(AI_Context* ctx) {
+    ctx->initialized = true;
+    ctx->min_gap = 1;
+    ctx->direction = 0; // 0 -> left, 1 -> down, 2 -> right, 3 -> up
+    ctx->last_hit_x = -1;
+    ctx->last_hit_y = -1;
+    ctx->initial_hit_x = -1;
+    ctx->initial_hit_y = -1;
+    ctx->is_revisit = false;
+    ctx->first_revisit = true;
+    ctx->hit_segments_count = 0;
+    ctx->direction_fully_explored = false;
+    ctx->dx[0] = -1;
+    ctx->dx[1] = 0;
+    ctx->dx[2] = 1;
+    ctx->dx[3] = 0;
+    ctx->dy[0] = 0;
+    ctx->dy[1] = 1;
+    ctx->dy[2] = 0;
+    ctx->dy[3] = -1;
+    ctx->dir_indices[0] = 0;
+    ctx->dir_indices[1] = 1;
+    ctx->dir_indices[2] = 2;
+    ctx->dir_indices[3] = 3;
+    ctx->remaining_cells_count = BOARD_SIZE * BOARD_SIZE;
+}
+
 void
 handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent,
                      AI_State *ai_state) {
-    // Initialize static variables for AI's state
-    static int min_gap = 1;
-    static int attempts = 0;
-    static int direction = 0; // 0 -> left, 1 -> down, 2 -> right, 3 -> up
-    static int last_hit_x = -1;
-    static int last_hit_y = -1;
-    static int initial_hit_x = -1;
-    static int initial_hit_y = -1;
-    static bool is_revisit = false;
-    static bool first_revisit = true;
-    static int hit_segments_count = 0;
-    static int destroyed_ships[NUM_SHIPS] = {0};
-    static bool direction_fully_explored = false;
-    static int dx[] = {-1, 0, 1, 0};
-    static int dy[] = {0, 1, 0, -1};
-    static int hit_segments[5][2];
-    static int remaining_cells[BOARD_SIZE * BOARD_SIZE][2];
-    static int dir_indices[] = {0, 1, 2, 3};
-    static int remaining_cells_count = BOARD_SIZE * BOARD_SIZE;
+    static AI_Context ai_ctx;
+
+    // Call initializers if necessary
+    if (!ai_ctx.initialized) {
+        initialize_ai_context(&ai_ctx);
+    }
 
     // Declare variables for the current shot
     int ship_index;
@@ -2601,12 +2648,12 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
     bool valid_cell_found = false;
 
     // Initialize remaining_cells array if it's the first computer's turn
-    if (remaining_cells_count == BOARD_SIZE * BOARD_SIZE) {
+    if (ai_ctx.remaining_cells_count == BOARD_SIZE * BOARD_SIZE) {
         int index = 0;
         for (int x = 0; x < BOARD_SIZE; x++) {
             for (int y = 0; y < BOARD_SIZE; y++) {
-                remaining_cells[index][0] = x;
-                remaining_cells[index][1] = y;
+                ai_ctx.remaining_cells[index][0] = x;
+                ai_ctx.remaining_cells[index][1] = y;
                 index++;
             }
         }
@@ -2618,26 +2665,26 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
             SEARCH_CASE:
             case SEARCH:
                 // Check if there are segments of a ship that haven't been destroyed yet
-                if (hit_segments_count > 0) {
+                if (ai_ctx.hit_segments_count > 0) {
                     *ai_state = REVISIT;
                     goto REVISIT_CASE;
                 }
 
                 // Reset variables
-                attempts = 0;
+                ai_ctx.attempts = 0;
                 int search_attempts = 0;
-                is_revisit = false;
+                ai_ctx.is_revisit = false;
 
                 // Shuffle the direction indices
-                shuffle_directions(dir_indices, 4);
+                shuffle_directions(ai_ctx.dir_indices, 4);
 
                 // Create a temporary array for remaining cells
-                int (*temp_remaining_cells)[2] = malloc(remaining_cells_count * sizeof(int[2]));
-                memcpy(temp_remaining_cells, remaining_cells, remaining_cells_count * sizeof(int[2]));
-                int temp_remaining_cells_count = remaining_cells_count;
+                int (*temp_remaining_cells)[2] = malloc(ai_ctx.remaining_cells_count * sizeof(int[2]));
+                memcpy(temp_remaining_cells, ai_ctx.remaining_cells, ai_ctx.remaining_cells_count * sizeof(int[2]));
+                int temp_remaining_cells_count = ai_ctx.remaining_cells_count;
 
                 // Try to find a valid cell to shoot
-                while (!valid_cell_found && search_attempts < remaining_cells_count) {
+                while (!valid_cell_found && search_attempts < ai_ctx.remaining_cells_count) {
                     // Choose a random cell to shoot from the temp_remaining_cells array
                     int random_index = (int) pcg32_boundedrand(temp_remaining_cells_count);
                     cell_x = temp_remaining_cells[random_index][0];
@@ -2654,15 +2701,15 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                     bool meets_gap_requirement = true;
 
                     for (int i = 0; i < 4; i++) {
-                        int x = cell_x + dx[i];
-                        int y = cell_y + dy[i];
+                        int x = cell_x + ai_ctx.dx[i];
+                        int y = cell_y + ai_ctx.dy[i];
 
                         // Check if the cell is within the board and hasn't been hit before
                         if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) continue;
                         if (!opponent->board.cells[x][y].hit) continue;
                         // Check if the cell meets the minimum gap requirement
                         if (opponent->board.cells[x][y].ship_index != -1) {
-                            if (opponent->ships[opponent->board.cells[x][y].ship_index].size >= min_gap) continue;
+                            if (opponent->ships[opponent->board.cells[x][y].ship_index].size >= ai_ctx.min_gap) continue;
                             meets_gap_requirement = false;
                         } else {
                             meets_gap_requirement = false;
@@ -2679,9 +2726,9 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                     // If the AI can't find a valid cell to shoot, it will shoot randomly until it finds a valid cell
                     do {
                         // Choose a random cell from the remaining_cells array
-                        int random_index = (int) pcg32_boundedrand(remaining_cells_count);
-                        cell_x = remaining_cells[random_index][0];
-                        cell_y = remaining_cells[random_index][1];
+                        int random_index = (int) pcg32_boundedrand(ai_ctx.remaining_cells_count);
+                        cell_x = ai_ctx.remaining_cells[random_index][0];
+                        cell_y = ai_ctx.remaining_cells[random_index][1];
 
                         // Check if the cell hasn't been hit before
                         if (opponent->board.cells[cell_x][cell_y].hit) continue;
@@ -2697,29 +2744,29 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                 valid_cell_found = false;
 
                 // Try to find a valid cell to shoot in the current direction
-                while (!valid_cell_found && attempts < 4) {
-                    if (*ai_state == TARGET && !direction_fully_explored && !is_revisit) {
+                while (!valid_cell_found && ai_ctx.attempts < 4) {
+                    if (*ai_state == TARGET && !ai_ctx.direction_fully_explored && !ai_ctx.is_revisit) {
                         // Choose a random direction to shoot
-                        direction = dir_indices[attempts];
-                        cell_x = initial_hit_x + dx[direction];
-                        cell_y = initial_hit_y + dy[direction];
+                        ai_ctx.direction = ai_ctx.dir_indices[ai_ctx.attempts];
+                        cell_x = ai_ctx.initial_hit_x + ai_ctx.dx[ai_ctx.direction];
+                        cell_y = ai_ctx.initial_hit_y + ai_ctx.dy[ai_ctx.direction];
                     } else { // *ai_state == DESTROY, direction_fully_explored or is_revisit
 
                         // Check if the direction has been fully explored to start revisiting
-                        if (direction_fully_explored && *ai_state == TARGET && attempts > 0) {
+                        if (ai_ctx.direction_fully_explored && *ai_state == TARGET && ai_ctx.attempts > 0) {
                             *ai_state = REVISIT;
                             goto REVISIT_CASE;
                         }
 
                         // Check if the AI has not explored the other direction yet
-                        if (is_revisit && attempts == 1 && !direction_fully_explored) {
+                        if (ai_ctx.is_revisit && ai_ctx.attempts == 1 && !ai_ctx.direction_fully_explored) {
                             // try the other direction
-                            direction = (direction + 2) % 4;
-                            direction_fully_explored = true;
+                            ai_ctx.direction = (ai_ctx.direction + 2) % 4;
+                            ai_ctx.direction_fully_explored = true;
                         }
 
-                        cell_x = last_hit_x + dx[direction];
-                        cell_y = last_hit_y + dy[direction];
+                        cell_x = ai_ctx.last_hit_x + ai_ctx.dx[ai_ctx.direction];
+                        cell_y = ai_ctx.last_hit_y + ai_ctx.dy[ai_ctx.direction];
                     }
 
                     // Check if the cell is within the board and hasn't been hit before
@@ -2728,43 +2775,43 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                         valid_cell_found = true;
                     } else {
                         // Increment the attempt counter
-                        attempts++;
+                        ai_ctx.attempts++;
 
-                        if (direction_fully_explored || *ai_state != DESTROY) continue;
+                        if (ai_ctx.direction_fully_explored || *ai_state != DESTROY) continue;
                         // If the AI has found the orientation and can't explore further in the first direction,
                         // explore the other direction
-                        direction = (direction + 2) % 4;
-                        last_hit_x = initial_hit_x;
-                        last_hit_y = initial_hit_y;
-                        direction_fully_explored = true;
+                        ai_ctx.direction = (ai_ctx.direction + 2) % 4;
+                        ai_ctx.last_hit_x = ai_ctx.initial_hit_x;
+                        ai_ctx.last_hit_y = ai_ctx.initial_hit_y;
+                        ai_ctx.direction_fully_explored = true;
                     }
                 }
 
                 // If no valid cell is found in TARGET or DESTROY state, switch back to SEARCH state
                 if (!valid_cell_found && (*ai_state == TARGET || *ai_state == DESTROY)) {
                     if (*ai_state == TARGET) {
-                        direction = (direction + 1) % 4; // Try the next direction
-                        attempts++; // Increment attempts count
+                        ai_ctx.direction = (ai_ctx.direction + 1) % 4; // Try the next direction
+                        ai_ctx.attempts++; // Increment attempts count
 
                         // If all directions have been tried, switch back to SEARCH state
-                        if (attempts < 4) continue;
+                        if (ai_ctx.attempts < 4) continue;
                         *ai_state = SEARCH;
-                        attempts = 0;
-                        direction = 0;
-                        last_hit_x = -1;
-                        last_hit_y = -1;
-                        initial_hit_x = -1;
-                        initial_hit_y = -1;
-                        direction_fully_explored = false;
+                        ai_ctx.attempts = 0;
+                        ai_ctx.direction = 0;
+                        ai_ctx.last_hit_x = -1;
+                        ai_ctx.last_hit_y = -1;
+                        ai_ctx.initial_hit_x = -1;
+                        ai_ctx.initial_hit_y = -1;
+                        ai_ctx.direction_fully_explored = false;
                     } else { // *ai_state == DESTROY
                         *ai_state = SEARCH;
-                        attempts = 0;
-                        direction = 0;
-                        last_hit_x = -1;
-                        last_hit_y = -1;
-                        initial_hit_x = -1;
-                        initial_hit_y = -1;
-                        direction_fully_explored = false;
+                        ai_ctx.attempts = 0;
+                        ai_ctx.direction = 0;
+                        ai_ctx.last_hit_x = -1;
+                        ai_ctx.last_hit_y = -1;
+                        ai_ctx.initial_hit_x = -1;
+                        ai_ctx.initial_hit_y = -1;
+                        ai_ctx.direction_fully_explored = false;
                     }
                     continue; // Continue with the next iteration of the do-while loop
                 }
@@ -2772,26 +2819,26 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
 
             REVISIT_CASE:
             case REVISIT:
-                if (hit_segments_count > 0) {
+                if (ai_ctx.hit_segments_count > 0) {
                     // Choose a random segment from the hit_segments array
-                    int random_index = (int) pcg32_boundedrand(hit_segments_count);
-                    cell_x = hit_segments[random_index][0];
-                    cell_y = hit_segments[random_index][1];
+                    int random_index = (int) pcg32_boundedrand(ai_ctx.hit_segments_count);
+                    cell_x = ai_ctx.hit_segments[random_index][0];
+                    cell_y = ai_ctx.hit_segments[random_index][1];
 
                     // Remove the cell from the hit_segments array and decrease the hit_segments_count
-                    hit_segments[random_index][0] = hit_segments[hit_segments_count - 1][0];
-                    hit_segments[random_index][1] = hit_segments[hit_segments_count - 1][1];
-                    hit_segments_count--;
+                    ai_ctx.hit_segments[random_index][0] = ai_ctx.hit_segments[ai_ctx.hit_segments_count - 1][0];
+                    ai_ctx.hit_segments[random_index][1] = ai_ctx.hit_segments[ai_ctx.hit_segments_count - 1][1];
+                    ai_ctx.hit_segments_count--;
 
                     // Set the initially hit coordinates and last hit coordinates to the cell coordinates
-                    initial_hit_x = last_hit_x = cell_x;
-                    initial_hit_y = last_hit_y = cell_y;
+                    ai_ctx.initial_hit_x = ai_ctx.last_hit_x = cell_x;
+                    ai_ctx.initial_hit_y = ai_ctx.last_hit_y = cell_y;
 
                     static int dir_indices_revisit[2] = {0};
 
                     // Choose a random direction based on the saved direction, but only for the first revisit
-                    if (first_revisit) {
-                        if (direction == 0 || direction == 2) {
+                    if (ai_ctx.first_revisit) {
+                        if (ai_ctx.direction == 0 || ai_ctx.direction == 2) {
 
                             // If the direction is 0 or 2, the other directions are 1 and 3
                             dir_indices_revisit[0] = 1;
@@ -2799,30 +2846,30 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                             shuffle_directions(dir_indices_revisit, 2);
 
                             // Choose a random direction from the other two
-                            direction = dir_indices_revisit[0];
+                            ai_ctx.direction = dir_indices_revisit[0];
                         } else {
                             // If the direction is 1 or 3, the other directions are 0 and 2
                             dir_indices_revisit[0] = 0;
                             dir_indices_revisit[1] = 2;
                             shuffle_directions(dir_indices_revisit, 2);
-                            direction = dir_indices[0];
+                            ai_ctx.direction = ai_ctx.dir_indices[0];
                         }
-                        first_revisit = false;
+                        ai_ctx.first_revisit = false;
                     } else {
                         shuffle_directions(dir_indices_revisit, 2);
-                        direction = dir_indices_revisit[0];
+                        ai_ctx.direction = dir_indices_revisit[0];
                     }
 
                     // Update the AI state to TARGET
-                    is_revisit = true;
+                    ai_ctx.is_revisit = true;
                     *ai_state = TARGET;
-                    attempts = 0;
-                    direction_fully_explored = false;
+                    ai_ctx.attempts = 0;
+                    ai_ctx.direction_fully_explored = false;
                     goto TARGET_CASE;
                 } else {
                     // If there are no hit segments left to revisit, switch back to SEARCH state
-                    is_revisit = false;
-                    first_revisit = true;
+                    ai_ctx.is_revisit = false;
+                    ai_ctx.first_revisit = true;
                     *ai_state = SEARCH;
                     goto SEARCH_CASE;
                 }
@@ -2835,7 +2882,7 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
             has_shot = true;
 
             // Remove the cell from the remaining_cells array
-            remove_cell(cell_x, cell_y, remaining_cells, &remaining_cells_count);
+            remove_cell(cell_x, cell_y, ai_ctx.remaining_cells, &ai_ctx.remaining_cells_count);
 
             // If the cell is occupied by a ship
             if (opponent->board.cells[cell_x][cell_y].occupied) {
@@ -2847,54 +2894,54 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                 // Update AI state based on the current state
                 if (*ai_state == SEARCH) {
                     *ai_state = TARGET;
-                    initial_hit_x = last_hit_x = cell_x;
-                    initial_hit_y = last_hit_y = cell_y;
+                    ai_ctx.initial_hit_x = ai_ctx.last_hit_x = cell_x;
+                    ai_ctx.initial_hit_y = ai_ctx.last_hit_y = cell_y;
                 } else if (*ai_state == TARGET || *ai_state == DESTROY) {
                     if (*ai_state == TARGET) {
                         // Update the state to DESTROY
                         *ai_state = DESTROY;
-                        attempts = 0;
+                        ai_ctx.attempts = 0;
                     }
-                    last_hit_x = cell_x;
-                    last_hit_y = cell_y;
+                    ai_ctx.last_hit_x = cell_x;
+                    ai_ctx.last_hit_y = cell_y;
                 }
 
                 // If the ship is sunk, reset AI state to SEARCH, update destroyed_ships array and min gap
                 if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
-                    destroyed_ships[ship_index] = true;
+                    ai_ctx.destroyed_ships[ship_index] = true;
 
                     // Update min_gap when a ship is destroyed
                     int smallest_ship_remaining = BOARD_SIZE + 1;
                     for (int i = 0; i < NUM_SHIPS; i++) {
-                        if (destroyed_ships[i] || opponent->ships[i].size >= smallest_ship_remaining) continue;
+                        if (ai_ctx.destroyed_ships[i] || opponent->ships[i].size >= smallest_ship_remaining) continue;
                         smallest_ship_remaining = opponent->ships[i].size;
                     }
-                    min_gap = smallest_ship_remaining - 1;
+                    ai_ctx.min_gap = smallest_ship_remaining - 1;
 
-                    if (!is_revisit) {
+                    if (!ai_ctx.is_revisit) {
                         // reset hit segments array
-                        for (int i = 0; i < hit_segments_count; i++) {
-                            hit_segments[i][0] = -1;
-                            hit_segments[i][1] = -1;
-                            hit_segments_count = 0;
+                        for (int i = 0; i < ai_ctx.hit_segments_count; i++) {
+                            ai_ctx.hit_segments[i][0] = -1;
+                            ai_ctx.hit_segments[i][1] = -1;
+                            ai_ctx.hit_segments_count = 0;
                         }
-                        direction = 0;
+                        ai_ctx.direction = 0;
                     }
 
                     // Reset AI state
                     *ai_state = SEARCH;
-                    attempts = 0;
-                    last_hit_x = -1;
-                    last_hit_y = -1;
-                    initial_hit_x = -1;
-                    initial_hit_y = -1;
+                    ai_ctx.attempts = 0;
+                    ai_ctx.last_hit_x = -1;
+                    ai_ctx.last_hit_y = -1;
+                    ai_ctx.initial_hit_x = -1;
+                    ai_ctx.initial_hit_y = -1;
                     valid_cell_found = false;
-                    direction_fully_explored = false;
-                } else if (!is_revisit) {
+                    ai_ctx.direction_fully_explored = false;
+                } else if (!ai_ctx.is_revisit) {
                     // Add ship segments to the hit_segments array
-                    hit_segments[hit_segments_count][0] = cell_x;
-                    hit_segments[hit_segments_count][1] = cell_y;
-                    hit_segments_count++;
+                    ai_ctx.hit_segments[ai_ctx.hit_segments_count][0] = cell_x;
+                    ai_ctx.hit_segments[ai_ctx.hit_segments_count][1] = cell_y;
+                    ai_ctx.hit_segments_count++;
                 }
 
                 // Render the game boards again
@@ -2905,29 +2952,29 @@ handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *f
                 // If the cell was not occupied by a ship, update AI state
                 shot_successful = false;
                 if (*ai_state == TARGET) {
-                    attempts++;
+                    ai_ctx.attempts++;
                 } else if (*ai_state == DESTROY) {
                     *ai_state = TARGET;
-                    direction = (direction + 2) % 4; // Reverse direction
-                    last_hit_x = initial_hit_x;
-                    last_hit_y = initial_hit_y;
-                    direction_fully_explored = true;
+                    ai_ctx.direction = (ai_ctx.direction + 2) % 4; // Reverse direction
+                    ai_ctx.last_hit_x = ai_ctx.initial_hit_x;
+                    ai_ctx.last_hit_y = ai_ctx.initial_hit_y;
+                    ai_ctx.direction_fully_explored = true;
                 }
             }
         } else {
             // If the shot was unsuccessful, update AI states
             if (*ai_state == TARGET) {
-                direction = dir_indices[attempts];
-                attempts++;
-                direction_fully_explored = false;
+                ai_ctx.direction = ai_ctx.dir_indices[ai_ctx.attempts];
+                ai_ctx.attempts++;
+                ai_ctx.direction_fully_explored = false;
             } else if (*ai_state == DESTROY) {
-                if (direction_fully_explored) {
+                if (ai_ctx.direction_fully_explored) {
                     *ai_state = REVISIT;
                 } else {
                     *ai_state = TARGET;
-                    direction = (direction + 2) % 4; // Reverse direction
-                    last_hit_x = initial_hit_x;
-                    last_hit_y = initial_hit_y;
+                    ai_ctx.direction = (ai_ctx.direction + 2) % 4; // Reverse direction
+                    ai_ctx.last_hit_x = ai_ctx.initial_hit_x;
+                    ai_ctx.last_hit_y = ai_ctx.initial_hit_y;
                 }
             }
         }
