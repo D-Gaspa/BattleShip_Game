@@ -201,7 +201,8 @@ int is_mouse_inside_button(int x, int y, SDL_Rect button_rect);
 /// \param button_rects An array of SDL_Rect structures representing the main menu buttons.
 /// \param num_background_frames A pointer to an int to store the number of background frames.
 /// \return void
-void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SDL_Rect *button_rects, int *num_background_frames);
+void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SDL_Rect *button_rects,
+                    int *num_background_frames);
 
 /// \brief Handles events for the main menu.
 ///
@@ -212,7 +213,8 @@ void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SD
 /// \param hover_button A pointer to an int that represents the index of the button being hovered.
 /// \param selected_option A pointer to a MainMenuOption enum value to store the user's selection.
 /// \return int Returns 0 if the user clicks a button, 1 if the main menu should continue running.
-int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover_button, MainMenuOption *selected_option);
+int
+handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover_button, MainMenuOption *selected_option);
 
 /// \brief Renders the main menu.
 ///
@@ -225,7 +227,8 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
 /// \param button_rects An array of SDL_Rect structures representing the main menu buttons.
 /// \param hover_button An int representing the index of the button being hovered.
 /// \return void
-void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter, SDL_Rect *button_rects, int hover_button);
+void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter,
+                      SDL_Rect *button_rects, int hover_button);
 
 /// \brief Executes the main menu loop.
 ///
@@ -301,7 +304,8 @@ void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation, int
 /// \param placed_ships Pointer to the array of booleans indicating whether each ship has been placed.
 /// \param ship_selected Pointer to an integer representing the index of the currently selected ship (-1 if none).
 /// \param orientation_to_reset Pointer to an integer representing the orientation to reset after placing ships.
-void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[], int *ship_selected, int *orientation_to_reset);
+void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[], int *ship_selected,
+                        int *orientation_to_reset);
 
 /// \brief Renders a single part of a ship.
 ///
@@ -314,7 +318,8 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
 /// \param part_index The index of the part within the ship.
 /// \param ship_size The size of the ship.
 /// \return void
-void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size);
+void
+render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size);
 
 /// \brief Renders the border for the currently selected ship.
 ///
@@ -350,7 +355,8 @@ void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool
 /// \param placed_ships An array of booleans indicating whether each ship has been placed.
 /// \param black_texture An SDL_Texture pointer to the black overlay texture.
 /// \return void
-void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part_index, const bool placed_ships[], SDL_Texture *black_texture);
+void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part_index, const bool placed_ships[],
+                                SDL_Texture *black_texture);
 
 /// \brief Renders the ship icons on the left side of the placement screen.
 ///
@@ -364,7 +370,8 @@ void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part
 /// \param black_texture A pointer to an SDL_Texture representing the black texture.
 /// \param ship_selected An int representing the selected ship index.
 /// \return void
-void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], SDL_Texture *black_texture, int ship_selected);
+void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *textures, Ship ships[],
+                                      const bool placed_ships[], SDL_Texture *black_texture, int ship_selected);
 
 /// \brief Sets the button color based on the mouse hover state.
 ///
@@ -407,7 +414,8 @@ void render_orientation_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect or
 /// \param hover_orientation A bool indicating whether the mouse is hovering over the button.
 /// \param orientation An int representing the current orientation.
 /// \return void
-void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int hover_orientation, int orientation);
+void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button,
+                                         int hover_orientation, int orientation);
 
 /// \brief Renders the "Restart the board" button during the ship placement phase.
 ///
@@ -446,7 +454,8 @@ void render_placement_random_button(SDL_Renderer *renderer, TTF_Font *font, SDL_
 /// \param placed_ships An array of booleans indicating whether each ship has been placed.
 /// \param black_texture A pointer to an SDL_Texture representing the black texture.
 /// \return void
-void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture);
+void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish,
+                                    const bool placed_ships[], SDL_Texture *black_texture);
 
 /// \brief Renders the buttons during the ship placement phase.
 ///
@@ -460,7 +469,9 @@ void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_
 /// \param orientation An int representing the current orientation.
 /// \param black_texture A pointer to an SDL_Texture representing the black texture.
 /// \return void
-void render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture);
+void
+render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[],
+                         int orientation, SDL_Texture *black_texture);
 
 /// \brief Renders the grid background during the ship placement phase.
 ///
@@ -487,7 +498,8 @@ void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int 
 /// \param grid_mouse_y The y coordinate of the mouse on the game grid.
 /// \param valid_position A boolean indicating whether the current ship placement position is valid.
 /// \return void
-void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position);
+void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], int ship_selected, int orientation,
+                       int grid_mouse_x, int grid_mouse_y, bool valid_position);
 
 /// \brief Renders the placed ships on the game grid.
 ///
@@ -500,7 +512,8 @@ void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ship
 /// \param board_x The x coordinate of the game grid.
 /// \param board_y The y coordinate of the game grid.
 /// \return void
-void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int board_x, int board_y);
+void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[],
+                         int board_x, int board_y);
 
 /// \brief Renders a single segment of a ship.
 ///
@@ -513,7 +526,8 @@ void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship sh
 /// \param orientation The orientation of the ship (0 for horizontal, 1 for vertical).
 /// \param ship_rect A pointer to an SDL_Rect structure that represents the ship's rectangle on the screen.
 /// \return void
-void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship ship, int segment, int orientation, SDL_Rect *ship_rect);
+void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship ship, int segment, int orientation,
+                         SDL_Rect *ship_rect);
 
 /// \brief Renders the border of the ship during the placement phase.
 ///
@@ -541,7 +555,10 @@ void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int 
 /// \param grid_mouse_y The y coordinate of the mouse on the game grid.
 /// \param valid_position A boolean indicating whether the current ship placement position is valid.
 /// \return void
-void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position);
+void
+render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[],
+                            int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y,
+                            bool valid_position);
 
 /// \brief Render the invalid position border on the game board.
 ///
@@ -615,7 +632,10 @@ void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, 
 /// \param grid_mouse_y Integer representing the grid y-coordinate of the mouse cursor.
 /// \param valid_position Pointer to a boolean indicating whether the current position is valid for placing the selected ship.
 /// \param ships Pointer to an array of Ship structs representing the available ships.
-void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected, bool *placed_ships, int *orientation, ButtonData *button_data, bool *invalid_click, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, Ship *ships);
+void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected,
+                                        bool *placed_ships, int *orientation, ButtonData *button_data,
+                                        bool *invalid_click, int grid_mouse_x, int grid_mouse_y,
+                                        const bool *valid_position, Ship *ships);
 
 /// \brief Handles mouse motion events during the ship placement phase.
 ///
@@ -647,7 +667,10 @@ void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bo
 /// \param invalid_click A pointer to a boolean flag indicating whether an invalid position has been clicked or not.
 /// \param button_data A pointer to a ButtonData structure containing information about the buttons.
 /// \return void
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, int *orientation, bool *invalid_click, ButtonData *button_data);
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships,
+                                  Player *current_player, int grid_mouse_x, int grid_mouse_y,
+                                  const bool *valid_position, int *orientation, bool *invalid_click,
+                                  ButtonData *button_data);
 
 /// \brief Displays and handles the ship placement phase screen for a battleship game.
 ///
@@ -723,7 +746,8 @@ void render_game_boards(SDL_Renderer *renderer, GameTextures *textures, Player *
 /// \param board_x The x-coordinate of the game board.
 /// \param board_y The y-coordinate of the game board.
 /// \return void
-void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture, int cell_x, int cell_y, int board_x, int board_y);
+void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture, int cell_x, int cell_y, int board_x,
+                              int board_y);
 
 /// \brief Render the "Finish turn" button.
 ///
@@ -734,7 +758,8 @@ void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture
 /// \param finish_turn_button An SDL_Rect containing the position and dimensions of the "Finish turn" button.
 /// \param hover_finish_turn A boolean representing whether the mouse is hovering over the "Finish turn" button.
 /// \return void
-void render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn);
+void
+render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn);
 
 /// \brief Render the remaining ships count for both players.
 ///
@@ -787,7 +812,8 @@ void show_winner_message(SDL_Renderer *renderer, TTF_Font *font, int winner_play
 /// \param current_player A pointer to the Player structure containing the current player's data.
 /// \param opponent A pointer to the Player structure containing the opponent's data.
 /// \return void
-void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running, Player *current_player, Player *opponent);
+void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running,
+                                   Player *current_player, Player *opponent);
 
 /// \brief Handle mouse button up events during the game.
 ///
@@ -801,7 +827,8 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
 /// \param running A pointer to a boolean representing whether the game is running.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state);
+void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button,
+                                 const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state);
 
 /// \brief Handle game screen events.
 ///
@@ -819,7 +846,9 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
 /// \param hover_exit A pointer to a boolean indicating whether the mouse is hovering over the "Exit game" button.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, AI_State *ai_state);
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font,
+                               Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button,
+                               const bool *hover_save, const bool *hover_exit, AI_State *ai_state);
 
 /// \brief Shuffles the direction indices array.
 ///
@@ -842,7 +871,9 @@ void shuffle_directions(int *dir_indices, int size);
 /// \param opponent A pointer to the Player structure representing the human player.
 /// \param ai_state A pointer to the AI_State enumeration, which represents the current state of the AI (SEARCH, TARGET, DESTROY).
 /// \return void
-void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state);
+void
+handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent,
+                     AI_State *ai_state);
 
 /// \brief The game screen loop.
 ///
@@ -857,7 +888,8 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
 /// \param current_turn A pointer to an integer that indicates the current player's turn.
 /// \param ai_state A pointer to the AI_State structure containing the AI's state data.
 /// \return void
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state);
+void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1,
+                 Player *player2, int *current_turn, AI_State *ai_state);
 
 /// \brief Frees resources and performs cleanup before exiting the game.
 ///
@@ -876,12 +908,12 @@ int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
         return -1;
-    }//end if
+    }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
         printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
         return -1;
-    }//end if
+    }
 
     // Create an SDL window and renderer
     SDL_Window *window = SDL_CreateWindow("Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -889,27 +921,27 @@ int main() {
     if (window == NULL) {
         printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
-    }//end if
+    }
 
     // Create an SDL renderer
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
-    }//end if
+    }
 
     // Load game textures
     GameTextures *textures = load_game_textures(renderer);
     if (textures == NULL) {
         printf("Failed to load game textures.\n");
         return -1;
-    }//end if
+    }
 
     // Initialize SDL_ttf
     if (TTF_Init() == -1) {
         printf("TTF_Init: %s\n", TTF_GetError());
         exit(2);
-    }//end if
+    }
 
     TTF_Font *font = NULL;
     int font_size = 24;
@@ -919,7 +951,7 @@ int main() {
     if (font == NULL) {
         printf("TTF_OpenFont: %s\n", TTF_GetError());
         exit(2);
-    }//end if
+    }
 
     // Initialize players
     Player player1;
@@ -946,7 +978,7 @@ int main() {
         if (!load_success) {
             printf("Error loading saved game.\n");
             return -1;
-        }//end if
+        }
         player1.is_turn = (current_turn == 1);
         player2.is_turn = (current_turn == 2);
 
@@ -960,21 +992,21 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
         textures = load_game_textures(renderer);
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
 
         if (!player2.is_human) {
             ai_state = SEARCH;
-        }//end if
+        }
 
         game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
     } else if (menu_option == MAIN_MENU_NEW_GAME_PVP) {
@@ -987,12 +1019,12 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         // Load game textures
         textures = load_game_textures(renderer);
@@ -1000,7 +1032,7 @@ int main() {
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
 
         player1.is_human = true;
         player2.is_human = true;
@@ -1012,7 +1044,7 @@ int main() {
             printf("Player 1 did not place all ships.\n");
             cleanup(textures, renderer, font, window);
             return -1;
-        }//end if
+        }
 
         SDL_DestroyRenderer(renderer); // Destroy the renderer for player1
         SDL_DestroyWindow(window);     // Destroy the window for player1
@@ -1023,13 +1055,13 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         // Load game textures
         textures = load_game_textures(renderer);
@@ -1037,7 +1069,7 @@ int main() {
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
         placement_phase_screen(renderer, textures, font, &player2);
 
         if (player2.remaining_ships != 5) {
@@ -1045,7 +1077,7 @@ int main() {
             printf("Player 1 did not place all ships.\n");
             cleanup(textures, renderer, font, window);
             return -1;
-        }//end if
+        }
 
         SDL_DestroyRenderer(renderer); // Destroy the renderer for player2
         SDL_DestroyWindow(window);     // Destroy the window for player2
@@ -1057,13 +1089,13 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         // Load game textures
         textures = load_game_textures(renderer);
@@ -1071,7 +1103,7 @@ int main() {
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
 
         // Seed the random number generator
         pcg32_srandom(time(NULL), (intptr_t) &main);
@@ -1086,12 +1118,12 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         // Load game textures
         textures = load_game_textures(renderer);
@@ -1099,7 +1131,7 @@ int main() {
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
 
         player1.is_human = true;
         player2.is_human = false;
@@ -1111,7 +1143,7 @@ int main() {
             printf("Player 1 did not place all ships.\n");
             cleanup(textures, renderer, font, window);
             return -1;
-        }//end if
+        }
 
         SDL_DestroyRenderer(renderer); // Destroy the renderer for player1
         SDL_DestroyWindow(window);     // Destroy the window for player1
@@ -1125,13 +1157,13 @@ int main() {
         if (window == NULL) {
             printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (renderer == NULL) {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
             return -1;
-        }//end if
+        }
 
         // Load game textures
         textures = load_game_textures(renderer);
@@ -1139,17 +1171,17 @@ int main() {
         if (textures == NULL) {
             printf("Failed to load game textures.\n");
             return -1;
-        }//end if
+        }
 
         AI_State ai_state = SEARCH;
 
         game_screen(renderer, window, textures, font, &player1, &player2, &current_turn, &ai_state);
-    }//end else if
+    }
 
     // Cleanup and exit
     cleanup(textures, renderer, font, window);
     return 0;
-}//end main
+}
 
 // Function definitions
 
@@ -1158,7 +1190,7 @@ bool save_game(Player *player1, Player *player2, int current_turn, AI_State *ai_
     FILE *save_file = fopen("saved_game.dat", "wb");
     if (save_file == NULL) {
         return false;
-    }//end if
+    }
 
     // Write player1, player2, current_turn and ai_state to the save file
     fwrite(player1, sizeof(Player), 1, save_file);
@@ -1169,14 +1201,14 @@ bool save_game(Player *player1, Player *player2, int current_turn, AI_State *ai_
     // Close the save file
     fclose(save_file);
     return true;
-}//end save_game
+}
 
 bool load_game(Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
     // Load the game state from a file ("saved_game.dat")
     FILE *save_file = fopen("saved_game.dat", "rb");
     if (save_file == NULL) {
         return false;
-    }//end if
+    }
 
     // Read player1, player2, current_turn, and ai_state from the save file
     fread(player1, sizeof(Player), 1, save_file);
@@ -1187,7 +1219,7 @@ bool load_game(Player *player1, Player *player2, int *current_turn, AI_State *ai
     // Close the save file
     fclose(save_file);
     return true;
-}//end load_game
+}
 
 SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer) {
     // Load the image as an SDL_Surface
@@ -1195,18 +1227,18 @@ SDL_Texture *load_texture(const char *filename, SDL_Renderer *renderer) {
     if (surface == NULL) {
         printf("Failed to load image: %s. SDL Error: %s\n", filename, IMG_GetError());
         return NULL;
-    }//end if
+    }
 
     // Convert the SDL_Surface to an SDL_Texture
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     if (texture == NULL) {
         printf("Failed to create texture from surface. SDL Error: %s\n", SDL_GetError());
-    }//end if
+    }
 
     // Free the SDL_Surface
     SDL_FreeSurface(surface);
     return texture;
-}//end load_texture
+}
 
 GameTextures *load_game_textures(SDL_Renderer *renderer) {
     // Allocate memory for the GameTextures structure
@@ -1214,7 +1246,7 @@ GameTextures *load_game_textures(SDL_Renderer *renderer) {
     if (textures == NULL) {
         printf("Failed to allocate memory for game textures.\n");
         return NULL;
-    }//end if
+    }
 
     // Load individual game textures
     textures->ocean = load_texture("Assets/ocean.png", renderer);
@@ -1230,7 +1262,7 @@ GameTextures *load_game_textures(SDL_Renderer *renderer) {
     textures->miss = load_texture("Assets/miss.png", renderer);
 
     return textures;
-}//end load_game_textures
+}
 
 SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filepath, int num_frames) {
     // Allocate memory for the array of SDL_Texture pointers
@@ -1244,11 +1276,11 @@ SDL_Texture **load_animated_background(SDL_Renderer *renderer, const char *filep
         if (textures[i] == NULL) {
             printf("Failed to load background frame: %s\n", filename);
             return NULL;
-        }//end if
-    }//end for
+        }
+    }
 
     return textures;
-}//end load_animated_background
+}
 
 void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y) {
     // Set the text color
@@ -1259,14 +1291,14 @@ void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x
     if (text_surface == NULL) {
         printf("TTF_RenderText_Solid: %s\n", TTF_GetError());
         exit(2);
-    }//end if
+    }
 
     // Convert the surface to a texture
     SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
     if (text_texture == NULL) {
         printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
         exit(2);
-    }//end if
+    }
 
     // Set the position and size of the text
     SDL_Rect text_rect;
@@ -1281,7 +1313,7 @@ void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x
     // Free resources
     SDL_DestroyTexture(text_texture);
     SDL_FreeSurface(text_surface);
-}//end render_text
+}
 
 void render_colored_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, int x, int y, int r, int g, int b) {
     // Set the text color
@@ -1300,22 +1332,23 @@ void render_colored_text(SDL_Renderer *renderer, const char *text, TTF_Font *fon
     // Free resources
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
-}//end render_colored_text
+}
 
 int is_mouse_inside_button(int x, int y, SDL_Rect button_rect) {
     // Check if the mouse is inside the button
     return x >= button_rect.x && x <= button_rect.x + button_rect.w &&
            y >= button_rect.y && y <= button_rect.y + button_rect.h;
-}//end is_mouse_inside_button
+}
 
-void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SDL_Rect *button_rects, int *num_background_frames) {
+void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SDL_Rect *button_rects,
+                    int *num_background_frames) {
     // Load animated background textures
     *num_background_frames = 10;
-    *background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_",*num_background_frames);
+    *background_frames = load_animated_background(renderer, "Assets/Backgrounds/frame_", *num_background_frames);
     if (*background_frames == NULL) {
         printf("Failed to load animated background.\n");
         return;
-    }//end if
+    }
 
     // Create buttons and positions for the main menu
     for (int i = 0; i < 4; i++) {
@@ -1323,16 +1356,17 @@ void init_main_menu(SDL_Renderer *renderer, SDL_Texture ***background_frames, SD
         button_rects[i].y = 85 + i * 60;
         button_rects[i].w = 210;
         button_rects[i].h = 40;
-    }//end for
-}//end init_main_menu
+    }
+}
 
-int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover_button, MainMenuOption *selected_option) {
+int
+handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover_button, MainMenuOption *selected_option) {
     int running = 1;
 
     // Handle SDL_QUIT event
     if (event->type == SDL_QUIT) {
         running = 0;
-    }//end if
+    }
 
         // Handle mouse button press
     else if (event->type == SDL_MOUSEBUTTONDOWN) {
@@ -1343,12 +1377,12 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
             // Check if any buttons were clicked
             for (int i = 0; i < 4; i++) {
                 if (is_mouse_inside_button(x, y, button_rects[i])) {
-                    *selected_option = (MainMenuOption)i;
+                    *selected_option = (MainMenuOption) i;
                     return 0;
-                }//end if
-            }//end for
-        }//end if
-    }//end if
+                }
+            }
+        }
+    }
 
         // Handle mouse movement
     else if (event->type == SDL_MOUSEMOTION) {
@@ -1361,14 +1395,15 @@ int handle_main_menu_events(SDL_Event *event, SDL_Rect *button_rects, int *hover
             if (is_mouse_inside_button(x, y, button_rects[i])) {
                 *hover_button = i;
                 break;
-            }//end if
-        }//end for
-    }//end if
+            }
+        }
+    }
 
     return running;
-}//end handle_main_menu_events
+}
 
-void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter, SDL_Rect *button_rects, int hover_button) {
+void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, TTF_Font *font, int frame_counter,
+                      SDL_Rect *button_rects, int hover_button) {
     // Render the animated background
     SDL_RenderCopy(renderer, background_frames[frame_counter], NULL, NULL);
 
@@ -1382,7 +1417,7 @@ void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, T
             SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray for hover
         } else {
             SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
-        }//end if
+        }
 
         // Render the button background
         SDL_RenderFillRect(renderer, &button_rects[i]);
@@ -1395,8 +1430,8 @@ void render_main_menu(SDL_Renderer *renderer, SDL_Texture **background_frames, T
         SDL_RenderFillRect(renderer, &shadow_rect);
         // Render button label
         render_text(renderer, button_labels[i], font, button_rects[i].x + 24, button_rects[i].y + 8);
-    }//end for
-}//end render_main_menu
+    }
+}
 
 MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font) {
     MainMenuOption selected_option = MAIN_MENU_EXIT;
@@ -1419,8 +1454,8 @@ MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font) {
             running = handle_main_menu_events(&event, button_rects, &hover_button, &selected_option);
             if (running == 0) {
                 break;
-            }//end if
-        }//end while
+            }
+        }
 
         // Render the main menu
         frame_counter = (frame_counter + 1) % num_background_frames;
@@ -1429,16 +1464,16 @@ MainMenuOption main_menu(SDL_Renderer *renderer, TTF_Font *font) {
         // Render the screen
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
-    }//end while
+    }
 
     // Free resources
     for (int i = 0; i < num_background_frames; i++) {
         SDL_DestroyTexture(background_frames[i]);
-    }//end for
+    }
     free(background_frames);
 
     return selected_option;
-}//end main_menu
+}
 
 void initialize_game_board(GameBoard *board) {
     // Iterate through all cells of the board
@@ -1453,9 +1488,9 @@ void initialize_game_board(GameBoard *board) {
             cell->ship_index = -1;
             cell->occupied = false;
             cell->hit = false;
-        }//end for
-    }//end for
-}//end initialize_game_board
+        }
+    }
+}
 
 void initialize_ships(Player *player) {
     // Iterate through all ships
@@ -1463,21 +1498,21 @@ void initialize_ships(Player *player) {
         // Set the size of the ship
         if (i == 0) {
             player->ships[i].size = 5;
-        } else if (i == 1 ) {
+        } else if (i == 1) {
             player->ships[i].size = 4;
         } else if (i == 2 || i == 3) {
             player->ships[i].size = 3;
         } else if (i == 4) {
             player->ships[i].size = 2;
-        }//end else if
+        }
 
         // Initialize the ship values
         player->ships[i].hit_count = 0;
         player->ships[i].x = -1;
         player->ships[i].y = -1;
         player->ships[i].orientation = 0;
-    }//end for
-}//end initialize_ships
+    }
+}
 
 bool is_position_valid(Player *current_player, int ship_size, int x, int y, int orientation) {
     // Iterate through all cells of the ship
@@ -1488,25 +1523,25 @@ bool is_position_valid(Player *current_player, int ship_size, int x, int y, int 
         // Check if the cell is inside the grid
         if (cell_x < 0 || cell_x >= BOARD_SIZE || cell_y < 0 || cell_y >= BOARD_SIZE) {
             return false;
-        }//end if
+        }
 
         // Check if the cell is already occupied
         if (current_player->board.cells[cell_x][cell_y].occupied == true) {
             return false;
-        }//end if
-    }//end for
+        }
+    }
     return true;
-}//end is_position_valid
+}
 
 bool all_ships_placed(const bool placed_ships[]) {
     // Iterate through all ships
     for (int i = 0; i < NUM_SHIPS; i++) {
         if (!placed_ships[i]) {
             return false;
-        }//end if
-    }//end for
+        }
+    }
     return true;
-}//end all_ships_placed
+}
 
 void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation, int ship_index) {
     // Update the ship's position
@@ -1522,10 +1557,11 @@ void place_ship(GameBoard *board, Ship *ship, int x, int y, int orientation, int
         Cell *cell = &board->cells[cell_x][cell_y];
         cell->occupied = true;
         cell->ship_index = ship_index; // Add this line to update the ship_index
-    }//end for
-}//end place_ship
+    }
+}
 
-void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[], int *ship_selected, int *orientation_to_reset) {
+void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[], int *ship_selected,
+                        int *orientation_to_reset) {
     // Reset the board and ships
     reset_placement_phase(ships, placed_ships, ship_selected, orientation_to_reset, &current_player->board);
 
@@ -1533,7 +1569,7 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
     current_player->remaining_ships = 0;
 
     // Seed the random number generator
-    pcg32_srandom(time(NULL), (intptr_t)&main);
+    pcg32_srandom(time(NULL), (intptr_t) &main);
 
     // Loop until all ships are placed
     for (int i = 0; i < NUM_SHIPS; i++) {
@@ -1542,9 +1578,9 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
         bool valid;
         do {
             // Generate random coordinates and orientation
-            x = (int)pcg32_boundedrand(BOARD_SIZE);
-            y = (int)pcg32_boundedrand(BOARD_SIZE);
-            orientation = (int)pcg32_boundedrand(2);
+            x = (int) pcg32_boundedrand(BOARD_SIZE);
+            y = (int) pcg32_boundedrand(BOARD_SIZE);
+            orientation = (int) pcg32_boundedrand(2);
 
             // Check if the position is valid
             valid = is_position_valid(current_player, ships[i].size, x, y, orientation);
@@ -1558,10 +1594,11 @@ void place_random_ships(Player *current_player, Ship ships[], bool placed_ships[
         current_player->placed_ships[i] = true;
         current_player->remaining_ships++;
         current_player->ships[i].hit_count = 0;
-    }//end for
-}//end place_random_ships
+    }
+}
 
-void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size) {
+void
+render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect ship_rect, int part_index, int ship_size) {
     SDL_Texture *part_texture = NULL;
 
     // Determine which part of the ship to render
@@ -1571,11 +1608,11 @@ void render_ship_part(SDL_Renderer *renderer, GameTextures *textures, SDL_Rect s
         part_texture = textures->ship_right;
     } else {
         part_texture = textures->ship_middle;
-    }//end else
+    }
 
     // Render the ship part
     SDL_RenderCopy(renderer, part_texture, NULL, &ship_rect);
-}//end render_ship_part
+}
 
 void render_selected_ship_border(SDL_Renderer *renderer, int ship_index, int ship_selected, Ship ships[]) {
     // Check if the current ship is selected
@@ -1583,8 +1620,8 @@ void render_selected_ship_border(SDL_Renderer *renderer, int ship_index, int shi
         SDL_Rect selected_ship_rect = {50, 50 + ship_index * 50, ships[ship_index].size * CELL_SIZE, CELL_SIZE};
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow
         SDL_RenderDrawRect(renderer, &selected_ship_rect);
-    }//end if
-}//end render_selected_ship_border
+    }
+}
 
 void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool placed_ships[], Ship ships[]) {
     int x, y;
@@ -1595,18 +1632,20 @@ void render_hover_ship_border(SDL_Renderer *renderer, int ship_index, const bool
     if (is_mouse_inside_button(x, y, hover_ship_rect) && !placed_ships[ship_index]) {
         SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green
         SDL_RenderDrawRect(renderer, &hover_ship_rect);
-    }//end if
-}//end render_hover_ship_border
+    }
+}
 
-void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part_index, const bool placed_ships[], SDL_Texture *black_texture) {
+void render_placed_ship_overlay(SDL_Renderer *renderer, int ship_index, int part_index, const bool placed_ships[],
+                                SDL_Texture *black_texture) {
     // Check if the current ship has been placed
     if (placed_ships[ship_index]) {
         SDL_Rect placed_ship_rect = {50 + part_index * CELL_SIZE, 50 + ship_index * 50, CELL_SIZE, CELL_SIZE};
         SDL_RenderCopy(renderer, black_texture, NULL, &placed_ship_rect);
-    }//end if
-}//end render_placed_ship_overlay
+    }
+}
 
-void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], SDL_Texture *black_texture, int ship_selected) {
+void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *textures, Ship ships[],
+                                      const bool placed_ships[], SDL_Texture *black_texture, int ship_selected) {
     // Loop through each ship
     for (int i = 0; i < NUM_SHIPS; i++) {
         int ship_size = ships[i].size;
@@ -1626,9 +1665,9 @@ void render_placement_ships_left_side(SDL_Renderer *renderer, GameTextures *text
 
             // Render the placed ship overlay if the ship has been placed
             render_placed_ship_overlay(renderer, i, j, placed_ships, black_texture);
-        }//end for
-    }//end for
-}//end render_placement_ships_left_side
+        }
+    }
+}
 
 void set_button_color(SDL_Renderer *renderer, bool hover_state) {
     // Change the color based on the hover state
@@ -1636,8 +1675,8 @@ void set_button_color(SDL_Renderer *renderer, bool hover_state) {
         SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255); // Lighter gray
     } else {
         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Original gray
-    }//end else
-}//end set_button_color
+    }
+}
 
 void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button) {
     // Create a new rectangle for the shadow, offset from the button
@@ -1648,7 +1687,7 @@ void render_button_shadow(SDL_Renderer *renderer, SDL_Rect orientation_button) {
     // Set the color for the shadow and render it
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 128);
     SDL_RenderFillRect(renderer, &shadow_rect);
-}//end render_button_shadow
+}
 
 void render_orientation_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int orientation) {
     // Render the appropriate text based on the orientation value
@@ -1656,10 +1695,11 @@ void render_orientation_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect or
         render_text(renderer, "Orientation: Horizontal", font, orientation_button.x + 24, orientation_button.y + 10);
     } else {
         render_text(renderer, "Orientation: Vertical", font, orientation_button.x + 24, orientation_button.y + 10);
-    }//end else
-}//end render_orientation_text
+    }
+}
 
-void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button, int hover_orientation, int orientation) {
+void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect orientation_button,
+                                         int hover_orientation, int orientation) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_orientation);
 
@@ -1671,7 +1711,7 @@ void render_placement_orientation_button(SDL_Renderer *renderer, TTF_Font *font,
 
     // Render orientation text
     render_orientation_text(renderer, font, orientation_button, orientation);
-}//end render_placement_orientation_button
+}
 
 void render_placement_reset_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect reset_button, bool hover_reset) {
     // Set button color based on mouse hover
@@ -1685,7 +1725,7 @@ void render_placement_reset_button(SDL_Renderer *renderer, TTF_Font *font, SDL_R
 
     // Render reset text
     render_text(renderer, "Restart the board", font, reset_button.x + 24, reset_button.y + 10);
-}//end render_placement_reset_button
+}
 
 void render_placement_random_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect random_button, bool hover_random) {
     // Set button color based on mouse hover
@@ -1699,9 +1739,10 @@ void render_placement_random_button(SDL_Renderer *renderer, TTF_Font *font, SDL_
 
     // Render random text
     render_text(renderer, "Randomize the board", font, random_button.x + 24, random_button.y + 10);
-}//end render_placement_random_button
+}
 
-void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish, const bool placed_ships[], SDL_Texture *black_texture) {
+void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_button, bool hover_finish,
+                                    const bool placed_ships[], SDL_Texture *black_texture) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_finish);
 
@@ -1720,13 +1761,17 @@ void render_placement_finish_button(SDL_Renderer *renderer, TTF_Font *font, SDL_
         SDL_RenderCopy(renderer, black_texture, NULL, &finish_button);
 
         // Render finish text with a different color
-        render_colored_text(renderer, "Finish placing ships", font, finish_button.x + 24, finish_button.y + 10, 255, 255, 255);
-    }//end else
-}//end render_placement_finish_button
+        render_colored_text(renderer, "Finish placing ships", font, finish_button.x + 24, finish_button.y + 10, 255,
+                            255, 255);
+    }
+}
 
-void render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[], int orientation, SDL_Texture *black_texture) {
+void
+render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData *button_data, const bool placed_ships[],
+                         int orientation, SDL_Texture *black_texture) {
     // Render the orientation button
-    render_placement_orientation_button(renderer, font, button_data->orientation_button, button_data->hover_orientation, orientation);
+    render_placement_orientation_button(renderer, font, button_data->orientation_button, button_data->hover_orientation,
+                                        orientation);
 
     // Render reset button
     render_placement_reset_button(renderer, font, button_data->reset_button, button_data->hover_reset);
@@ -1735,8 +1780,9 @@ void render_placement_buttons(SDL_Renderer *renderer, TTF_Font *font, ButtonData
     render_placement_random_button(renderer, font, button_data->random_button, button_data->hover_random);
 
     // Render finish button
-    render_placement_finish_button(renderer, font, button_data->finish_button, button_data->hover_finish, placed_ships, black_texture);
-}//end render_placement_buttons
+    render_placement_finish_button(renderer, font, button_data->finish_button, button_data->hover_finish, placed_ships,
+                                   black_texture);
+}
 
 void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int ship_selected) {
     // Choose the background texture based on whether a ship is selected
@@ -1747,11 +1793,12 @@ void render_grid_background(SDL_Renderer *renderer, GameTextures *textures, int 
         for (int j = 0; j < BOARD_SIZE; j++) {
             SDL_Rect grid_rect = {400 + i * CELL_SIZE, 50 + j * CELL_SIZE, CELL_SIZE, CELL_SIZE};
             SDL_RenderCopy(renderer, background_texture, NULL, &grid_rect);
-        }//end for
-    }//end for
-}//end render_grid_background
+        }
+    }
+}
 
-void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position) {
+void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], int ship_selected, int orientation,
+                       int grid_mouse_x, int grid_mouse_y, bool valid_position) {
     // Check if a ship is selected
     if (ship_selected >= 0) {
         int ship_size = ships[ship_selected].size;
@@ -1761,7 +1808,7 @@ void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ship
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
         } else {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
-        }//end else
+        }
 
         // Loop through each segment of the ship
         for (int k = 0; k < ship_size; k++) {
@@ -1777,10 +1824,10 @@ void render_ship_hover(SDL_Renderer *renderer, GameTextures *textures, Ship ship
 
                 // Render the ship border
                 render_ship_border(renderer, ship_size, k, orientation, &ship_rect);
-            }//end if
-        }//end for
-    }//end if
-}//end render_ship_hover
+            }
+        }
+    }
+}
 
 void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int orientation, SDL_Rect *ship_rect) {
     // Vertical orientation
@@ -1788,30 +1835,39 @@ void render_ship_border(SDL_Renderer *renderer, int ship_size, int segment, int 
 
         // Draw top and bottom borders for the first and last segments
         if (segment == 0) {
-            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w, ship_rect->y); // Top border
+            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w,
+                               ship_rect->y); // Top border
         } else if (segment == ship_size - 1) {
-            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w, ship_rect->y + ship_rect->h - 1); // Bottom border
-        }//end else if
+            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w,
+                               ship_rect->y + ship_rect->h - 1); // Bottom border
+        }
 
         // Draw left and right borders for all segments
-        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x, ship_rect->y + ship_rect->h); // Left border
-        SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1, ship_rect->y + ship_rect->h); // Right border
+        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x,
+                           ship_rect->y + ship_rect->h); // Left border
+        SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1,
+                           ship_rect->y + ship_rect->h); // Right border
     } else { // Horizontal orientation
 
         // Draw left and right borders for the first and last segments
         if (segment == 0) {
-            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x, ship_rect->y + ship_rect->h); // Left border
+            SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x,
+                               ship_rect->y + ship_rect->h); // Left border
         } else if (segment == ship_size - 1) {
-            SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1, ship_rect->y + ship_rect->h); // Right border
-        }//end else if
+            SDL_RenderDrawLine(renderer, ship_rect->x + ship_rect->w - 1, ship_rect->y, ship_rect->x + ship_rect->w - 1,
+                               ship_rect->y + ship_rect->h); // Right border
+        }
 
         // Draw top and bottom borders for all segments
-        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w, ship_rect->y); // Top border
-        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w, ship_rect->y + ship_rect->h - 1); // Bottom border
-    }//end if
-}//end render_ship_border
+        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y, ship_rect->x + ship_rect->w,
+                           ship_rect->y); // Top border
+        SDL_RenderDrawLine(renderer, ship_rect->x, ship_rect->y + ship_rect->h - 1, ship_rect->x + ship_rect->w,
+                           ship_rect->y + ship_rect->h - 1); // Bottom border
+    }
+}
 
-void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int board_x, int board_y) {
+void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[],
+                         int board_x, int board_y) {
     // Loop through all ships
     for (int i = 0; i < NUM_SHIPS; i++) {
         // Render the ship if it is placed
@@ -1822,12 +1878,13 @@ void render_placed_ships(SDL_Renderer *renderer, GameTextures *textures, Ship sh
                 int cell_y = ships[i].y + (ships[i].orientation == 1 ? j : 0);
                 SDL_Rect ship_rect = {board_x + cell_x * CELL_SIZE, board_y + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
                 render_ship_segment(renderer, textures, ships[i], j, ships[i].orientation, &ship_rect);
-            }//end for
-        }//end if
-    }//end for
-}//end render_placed_ships
+            }
+        }
+    }
+}
 
-void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship ship, int segment, int orientation, SDL_Rect *ship_rect) {
+void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship ship, int segment, int orientation,
+                         SDL_Rect *ship_rect) {
     // Vertical orientation
     if (orientation == 1) {
 
@@ -1838,7 +1895,7 @@ void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship sh
             SDL_RenderCopy(renderer, textures->ship_bottom, NULL, ship_rect);
         } else {
             SDL_RenderCopyEx(renderer, textures->ship_middle, NULL, ship_rect, 90, NULL, SDL_FLIP_NONE);
-        }//end else
+        }
     } else { // Horizontal orientation
 
         // Render the left, right, and middle segments based on the segment index
@@ -1848,27 +1905,31 @@ void render_ship_segment(SDL_Renderer *renderer, GameTextures *textures, Ship sh
             SDL_RenderCopy(renderer, textures->ship_right, NULL, ship_rect);
         } else {
             SDL_RenderCopy(renderer, textures->ship_middle, NULL, ship_rect);
-        }//end else
-    }//end else
-}//end render_ship_segment
+        }
+    }
+}
 
-void render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[], int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y, bool valid_position) {
+void
+render_placement_grid_ships(SDL_Renderer *renderer, GameTextures *textures, Ship ships[], const bool placed_ships[],
+                            int ship_selected, int orientation, int grid_mouse_x, int grid_mouse_y,
+                            bool valid_position) {
     // Render grid background
     render_grid_background(renderer, textures, ship_selected);
 
     // Render ship hover
-    render_ship_hover(renderer, textures, ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y, valid_position);
+    render_ship_hover(renderer, textures, ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y,
+                      valid_position);
 
     // Render placed ships
     render_placed_ships(renderer, textures, ships, placed_ships, 400, 50);
-}//end render_placement_grid_ships
+}
 
 void render_invalid_position_border(SDL_Renderer *renderer) {
     // Render red border around the grid
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
     SDL_Rect border_rect = {400, 50, 320, 320};
     SDL_RenderDrawRect(renderer, &border_rect);
-}//end render_invalid_position_border
+}
 
 void remove_ship_from_board(GameBoard *board, Ship *ship, int x, int y, int orientation) {
     // Loop through each segment of the ship
@@ -1881,9 +1942,9 @@ void remove_ship_from_board(GameBoard *board, Ship *ship, int x, int y, int orie
         // Remove the ship from the cell if it is within the board
         if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE) {
             board->cells[cell_x][cell_y].occupied = false;
-        }//end if
-    }//end for
-}//end remove_ship_from_board
+        }
+    }
+}
 
 int find_ship_at_position(Player *player, int x, int y) {
     // Loop through all ships
@@ -1894,19 +1955,19 @@ int find_ship_at_position(Player *player, int x, int y) {
         if (ship->x <= x && x < ship->x + (ship->orientation == 0 ? ship->size : 1) &&
             ship->y <= y && y < ship->y + (ship->orientation == 1 ? ship->size : 1)) {
             return i;
-        }//end if
-    }//end for
+        }
+    }
     return -1;
-}//end find_ship_at_position
+}
 
 void reset_game_board(GameBoard *board) {
     // Reset all cells to be unoccupied
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             board->cells[i][j].occupied = false;
-        }//end for
-    }//end for
-}//end reset_game_board
+        }
+    }
+}
 
 void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, int *orientation, GameBoard *board) {
     // Reset ship_selected and orientation
@@ -1919,20 +1980,23 @@ void reset_placement_phase(Ship *ships, bool *placed_ships, int *ship_selected, 
         ships[i].hit_count = 0;
         ships[i].x = 0;
         ships[i].y = 0;
-    }//end for
+    }
 
     // Reset the game board
     reset_game_board(board);
-}//end reset_placement_phase
+}
 
-void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected, bool *placed_ships, int *orientation, ButtonData *button_data, bool *invalid_click, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, Ship *ships) {
+void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player *current_player, int *ship_selected,
+                                        bool *placed_ships, int *orientation, ButtonData *button_data,
+                                        bool *invalid_click, int grid_mouse_x, int grid_mouse_y,
+                                        const bool *valid_position, Ship *ships) {
     int x = event->button.x;
     int y = event->button.y;
 
     // Check if the user clicked on the exit button
     if (is_mouse_inside_button(x, y, button_data->exit_button)) {
         *running = false;
-    }//end if
+    }
 
     // Check if the user clicked on the orientation button
     if (is_mouse_inside_button(x, y, button_data->orientation_button)) {
@@ -1941,7 +2005,7 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
         for (int i = 0; i < NUM_SHIPS; i++) {
             if (placed_ships[i]) {
                 continue;
-            }//end if
+            }
 
             int ship_size = ships[i].size;
 
@@ -1951,25 +2015,25 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
                 if (is_mouse_inside_button(x, y, ship_rect)) {
                     *ship_selected = i;
                     break;
-                }//end if
-            }//end for
-        }//end for
-    }//end else
+                }
+            }
+        }
+    }
 
     // Check if the user clicked on the reset button
     if (is_mouse_inside_button(x, y, button_data->reset_button)) {
         reset_placement_phase(ships, placed_ships, ship_selected, orientation, &current_player->board);
-    }//end if
+    }
 
     // Check if the user clicked on the "Random Board" button
     if (is_mouse_inside_button(x, y, button_data->random_button)) {
         place_random_ships(current_player, ships, placed_ships, ship_selected, orientation);
-    }//end if
+    }
 
     // Check if the user clicked on the "Finish placement phase" button
     if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
         *running = 0;
-    }//end if
+    }
 
     // Check if the user clicked on any button
     bool clicked_on_button = is_mouse_inside_button(x, y, button_data->exit_button) ||
@@ -1989,16 +2053,16 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
             if (is_mouse_inside_button(x, y, hover_ship_rect)) {
                 clicked_on_available_ship = true;
                 break;
-            }//end if
-        }//end for
-    }//end for
+            }
+        }
+    }
 
     // Update invalid_click only if the user clicked on an invalid position in placement mode (i.e., not on a button or a ship)
     if (clicked_on_button || clicked_on_available_ship) {
         *invalid_click = false;
     } else if (*ship_selected >= 0) {
         *invalid_click = !(*valid_position);
-    }//end else if
+    }
 
     // Check if the user clicked on the grid
     if (grid_mouse_x >= 0 && grid_mouse_x < BOARD_SIZE && grid_mouse_y >= 0 && grid_mouse_y < BOARD_SIZE) {
@@ -2010,17 +2074,19 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
             // Check if the user clicked on a placed ship
             if (clicked_ship_index >= 0 && placed_ships[clicked_ship_index]) {
                 Ship *clicked_ship = &ships[clicked_ship_index];
-                remove_ship_from_board(&current_player->board, clicked_ship, clicked_ship->x, clicked_ship->y, clicked_ship->orientation);
+                remove_ship_from_board(&current_player->board, clicked_ship, clicked_ship->x, clicked_ship->y,
+                                       clicked_ship->orientation);
                 current_player->remaining_ships--;
                 placed_ships[clicked_ship_index] = false;
                 *ship_selected = clicked_ship_index;
-            }//end if
-        }//end if
+            }
+        }
 
         // Check if the user clicked on a valid position and if a ship is selected
         if (*ship_selected >= 0 && !placed_ships[*ship_selected] && *valid_position) {
             current_player->ships[*ship_selected].size = ships[*ship_selected].size;
-            place_ship(&current_player->board, &current_player->ships[*ship_selected], grid_mouse_x, grid_mouse_y, *orientation, *ship_selected);
+            place_ship(&current_player->board, &current_player->ships[*ship_selected], grid_mouse_x, grid_mouse_y,
+                       *orientation, *ship_selected);
             placed_ships[*ship_selected] = true; // Set the ship as placed
 
             // Update player's placed ships
@@ -2031,9 +2097,9 @@ void handle_placement_mouse_button_down(SDL_Event *event, bool *running, Player 
             current_player->ships[*ship_selected].hit_count = 0;
 
             *ship_selected = -1;
-        }//end if
-    }//end if
-}//end handle_placement_mouse_button_down
+        }
+    }
+}
 
 void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bool *placed_ships) {
     int x = event->motion.x;
@@ -2044,31 +2110,34 @@ void handle_placement_mouse_motion(SDL_Event *event, ButtonData *button_data, bo
         button_data->hover_orientation = 1;
     } else {
         button_data->hover_orientation = 0;
-    }//end else
+    }
 
     // Check if the user is hovering over the reset button
     if (is_mouse_inside_button(x, y, button_data->reset_button)) {
         button_data->hover_reset = 1;
     } else {
         button_data->hover_reset = 0;
-    }//end else
+    }
 
     // Check if the user is hovering over the "Random Board" button
     if (is_mouse_inside_button(x, y, button_data->random_button)) {
         button_data->hover_random = 1;
     } else {
         button_data->hover_random = 0;
-    }//end else
+    }
 
     // Check if the user is hovering over the "Finish placement phase" button
     if (is_mouse_inside_button(x, y, button_data->finish_button) && all_ships_placed(placed_ships)) {
         button_data->hover_finish = 1;
     } else {
         button_data->hover_finish = 0;
-    }//end else
-}//end handle_placement_mouse_motion
+    }
+}
 
-void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships, Player *current_player, int grid_mouse_x, int grid_mouse_y, const bool *valid_position, int *orientation, bool *invalid_click, ButtonData *button_data) {
+void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_selected, bool *placed_ships, Ship *ships,
+                                  Player *current_player, int grid_mouse_x, int grid_mouse_y,
+                                  const bool *valid_position, int *orientation, bool *invalid_click,
+                                  ButtonData *button_data) {
     while (SDL_PollEvent(event)) {
         switch (event->type) {
             // Handle SDL_QUIT evenT
@@ -2079,8 +2148,10 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
                 // Handle mouse button press event
             case SDL_MOUSEBUTTONDOWN:
                 if (event->button.button == SDL_BUTTON_LEFT) {
-                    handle_placement_mouse_button_down(event, running, current_player, ship_selected, placed_ships, orientation, button_data, invalid_click, grid_mouse_x, grid_mouse_y, valid_position, ships);
-                }//end if
+                    handle_placement_mouse_button_down(event, running, current_player, ship_selected, placed_ships,
+                                                       orientation, button_data, invalid_click, grid_mouse_x,
+                                                       grid_mouse_y, valid_position, ships);
+                }
                 break;
 
                 // Handle mouse motion event
@@ -2092,11 +2163,11 @@ void handle_placement_phase_event(SDL_Event *event, bool *running, int *ship_sel
             case SDL_MOUSEBUTTONUP:
                 if (event->button.button == SDL_BUTTON_LEFT) {
                     *invalid_click = false;
-                }//end if
+                }
                 break;
-        }//end switch
-    }//end while
-}//end handle_placement_phase_event
+        }
+    }
+}
 
 void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player) {
     // Load background texture
@@ -2155,10 +2226,13 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
         SDL_GetMouseState(&mouse_x, &mouse_y);
         int grid_mouse_x = (mouse_x - 400) / CELL_SIZE;
         int grid_mouse_y = (mouse_y - 50) / CELL_SIZE;
-        bool valid_position = is_position_valid(current_player, current_player->ships[ship_selected].size, grid_mouse_x, grid_mouse_y, orientation);
+        bool valid_position = is_position_valid(current_player, current_player->ships[ship_selected].size, grid_mouse_x,
+                                                grid_mouse_y, orientation);
 
         // Handle events
-        handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, current_player->ships, current_player, grid_mouse_x, grid_mouse_y, &valid_position, &orientation, &invalid_click, &button_data);
+        handle_placement_phase_event(&event, &running, &ship_selected, placed_ships, current_player->ships,
+                                     current_player, grid_mouse_x, grid_mouse_y, &valid_position, &orientation,
+                                     &invalid_click, &button_data);
 
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -2168,10 +2242,12 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
         SDL_RenderCopy(renderer, background_texture, NULL, NULL);
 
         // Render the ships on the left side of the screen
-        render_placement_ships_left_side(renderer, textures, current_player->ships, placed_ships, black_texture, ship_selected);
+        render_placement_ships_left_side(renderer, textures, current_player->ships, placed_ships, black_texture,
+                                         ship_selected);
 
         // Render the grid and the ships on the grid (if any).
-        render_placement_grid_ships(renderer, textures, current_player->ships, placed_ships, ship_selected, orientation, grid_mouse_x, grid_mouse_y, valid_position);
+        render_placement_grid_ships(renderer, textures, current_player->ships, placed_ships, ship_selected, orientation,
+                                    grid_mouse_x, grid_mouse_y, valid_position);
 
         // Render exit option
         render_text(renderer, "Exit", font, exit_button.x + 25, exit_button.y + 10);
@@ -2182,18 +2258,18 @@ void placement_phase_screen(SDL_Renderer *renderer, GameTextures *textures, TTF_
         // Render invalid position border
         if (invalid_click) {
             render_invalid_position_border(renderer);
-        }//end if
+        }
 
         // Render the screen
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
-    }//end while
+    }
 
     // Destroy textures
     SDL_DestroyTexture(background_texture);
     SDL_FreeSurface(black_surface);
     SDL_DestroyTexture(black_texture);
-}//end placement_phase_screen
+}
 
 void placement_phase_computer(Player *computer) {
     // Initialize the computer's game board
@@ -2207,7 +2283,7 @@ void placement_phase_computer(Player *computer) {
     int orientation = 0;
     bool placed_ships[NUM_SHIPS] = {false};
     place_random_ships(computer, computer->ships, placed_ships, &ship_selected, &orientation);
-}//end placement_phase_computer
+}
 
 void render_player_board(SDL_Renderer *renderer, GameTextures *textures, Player *player, int board_x, int board_y) {
     // Render the placed ships on the player's board
@@ -2225,16 +2301,16 @@ void render_player_board(SDL_Renderer *renderer, GameTextures *textures, Player 
                     SDL_RenderCopy(renderer, textures->hit_own_ship, NULL, &cell_rect);
                 } else {
                     SDL_RenderCopy(renderer, textures->hit_ocean, NULL, &cell_rect);
-                }//end else
+                }
             } else {
                 // Render the ocean texture if the cell is not hit or occupied
                 if (!cell.occupied) {
                     SDL_RenderCopy(renderer, textures->ocean, NULL, &cell_rect);
-                }//end if
-            }//end else
-        }//end for
-    }//end for
-}//end render_player_board
+                }
+            }
+        }
+    }
+}
 
 void render_opponent_board(SDL_Renderer *renderer, GameTextures *textures, Player *opponent, int board_x, int board_y) {
     // Loop through the cells of the opponent's board and render the appropriate texture
@@ -2249,15 +2325,15 @@ void render_opponent_board(SDL_Renderer *renderer, GameTextures *textures, Playe
                     SDL_RenderCopy(renderer, textures->hit_enemy_ship, NULL, &cell_rect);
                 } else {
                     SDL_RenderCopy(renderer, textures->miss, NULL, &cell_rect);
-                }//end else
+                }
 
                 // Render the ocean texture if the cell is not hit or occupied
             } else {
                 SDL_RenderCopy(renderer, textures->ocean, NULL, &cell_rect);
-            }//end else
-        }//end for
-    }//end for
-}//end render_opponent_board
+            }
+        }
+    }
+}
 
 void render_game_boards(SDL_Renderer *renderer, GameTextures *textures, Player *current_player, Player *opponent) {
     int board_x_offset = 50; // Adjust the horizontal spacing between the boards
@@ -2269,24 +2345,26 @@ void render_game_boards(SDL_Renderer *renderer, GameTextures *textures, Player *
     // Render the opponent's board
     int opponent_board_x = 2 * board_x_offset + BOARD_SIZE * CELL_SIZE;
     render_opponent_board(renderer, textures, opponent, opponent_board_x, board_y_offset);
-}//end render_game_boards
+}
 
-void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture, int cell_x, int cell_y, int board_x, int board_y) {
+void render_game_hover_effect(SDL_Renderer *renderer, SDL_Texture *white_texture, int cell_x, int cell_y, int board_x,
+                              int board_y) {
     // Render hover effect on the specified cell and its corresponding x and y-axis cells
     for (int i = 0; i < BOARD_SIZE; i++) {
         if (i != cell_y) {
             SDL_Rect hover_rect = {board_x + cell_x * CELL_SIZE, board_y + i * CELL_SIZE, CELL_SIZE, CELL_SIZE};
             SDL_RenderCopy(renderer, white_texture, NULL, &hover_rect);
-        }//end if
+        }
 
         if (i != cell_x) {
             SDL_Rect hover_rect = {board_x + i * CELL_SIZE, board_y + cell_y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
             SDL_RenderCopy(renderer, white_texture, NULL, &hover_rect);
-        }//end if
-    }//end for
-}//end render_game_hover_effect
+        }
+    }
+}
 
-void render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn) {
+void
+render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect finish_turn_button, bool hover_finish_turn) {
     // Set button color based on mouse hover
     set_button_color(renderer, hover_finish_turn);
 
@@ -2298,7 +2376,7 @@ void render_finish_turn_button(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect 
 
     // Render finish text
     render_text(renderer, "Finish turn", font, finish_turn_button.x + 24, finish_turn_button.y + 10);
-}//end render_finish_turn_button
+}
 
 void render_remaining_ships_text(SDL_Renderer *renderer, TTF_Font *font, Player *current_player, Player *opponent) {
     char text_buffer[50];
@@ -2312,7 +2390,7 @@ void render_remaining_ships_text(SDL_Renderer *renderer, TTF_Font *font, Player 
     snprintf(text_buffer, sizeof(text_buffer), "Remaining ships: %d", opponent->remaining_ships);
     int text_x = 2 * 50 + BOARD_SIZE * CELL_SIZE;
     render_colored_text(renderer, text_buffer, font, text_x, text_y, 255, 255, 255);
-}//end render_remaining_ships_text
+}
 
 bool update_hit_count(Player *player, int ship_index) {
     // Update the hit count of the ship
@@ -2322,16 +2400,16 @@ bool update_hit_count(Player *player, int ship_index) {
     if (player->ships[ship_index].hit_count == player->ships[ship_index].size) {
         player->remaining_ships--;
         return true;
-    }//end if
+    }
     return false;
-}//end update_hit_count
+}
 
 void update_window_title(SDL_Window *window, int current_player_num) {
     // Update the window title to show the current player
     char title[50];
     snprintf(title, sizeof(title), "Battleship - Player %d", current_player_num);
     SDL_SetWindowTitle(window, title);
-}//end update_window_title
+}
 
 void show_winner_message(SDL_Renderer *renderer, TTF_Font *font, int winner_player_num) {
     // Create the winner message
@@ -2341,9 +2419,10 @@ void show_winner_message(SDL_Renderer *renderer, TTF_Font *font, int winner_play
     // Render the winner message
     SDL_Color color = {255, 255, 255, 255};
     render_colored_text(renderer, message, font, 300, 500, color.r, color.g, color.b);
-}//end show_winner_message
+}
 
-void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running, Player *current_player, Player *opponent) {
+void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, bool *running,
+                                   Player *current_player, Player *opponent) {
     // Get the mouse position
     int mouse_x, mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -2353,7 +2432,8 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
     int opponent_board_y = 100;
 
     // Check if the mouse click is within the opponent's board and if the player can shoot
-    if (current_player->can_shoot && mouse_x >= opponent_board_x && mouse_x < opponent_board_x + BOARD_SIZE * CELL_SIZE &&
+    if (current_player->can_shoot && mouse_x >= opponent_board_x &&
+        mouse_x < opponent_board_x + BOARD_SIZE * CELL_SIZE &&
         mouse_y >= opponent_board_y && mouse_y < opponent_board_y + BOARD_SIZE * CELL_SIZE) {
 
         int cell_x = (mouse_x - opponent_board_x) / CELL_SIZE;
@@ -2377,9 +2457,9 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
             } else {
                 // Show the "Finish turn" button
                 current_player->can_shoot = false;
-            }//end else
-        }//end if
-    }//end if
+            }
+        }
+    }
 
     // Check if the game is over (no enemy ships remaining)
     if (opponent->remaining_ships == 0) {
@@ -2390,10 +2470,11 @@ void handle_game_mouse_button_down(SDL_Renderer *renderer, GameTextures *texture
         SDL_RenderPresent(renderer);
         SDL_Delay(3000); // Wait for 3 seconds before closing the game
         *running = 0;
-    }//end if
-}//end handle_game_mouse_button_down
+    }
+}
 
-void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state) {
+void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_Rect finish_turn_button,
+                                 const bool *hover_save, const bool *hover_exit, bool *running, AI_State *ai_state) {
     // Get the mouse position
     int mouse_x, mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -2405,22 +2486,24 @@ void handle_game_mouse_button_up(Player *current_player, Player *opponent, SDL_R
 
         // Reset can_shoot variable
         current_player->can_shoot = true;
-    }//end if
+    }
 
     if (*hover_save) {
         if (save_game(current_player, opponent, current_player->is_turn ? 1 : 2, ai_state)) {
             printf("Game saved successfully!\n");
         } else {
             printf("Error saving game!");
-        }//end else
-    }//end if
+        }
+    }
 
     if (*hover_exit) {
         *running = false;
-    }//end if
-}//end handle_game_mouse_button_up
+    }
+}
 
-void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button, const bool *hover_save, const bool *hover_exit, AI_State *ai_state) {
+void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font,
+                               Player *current_player, Player *opponent, bool *running, SDL_Rect finish_turn_button,
+                               const bool *hover_save, const bool *hover_exit, AI_State *ai_state) {
     // Handle game screen events
     while (SDL_PollEvent(event)) {
         switch (event->type) {
@@ -2433,18 +2516,19 @@ void handle_game_screen_events(SDL_Event *event, SDL_Renderer *renderer, GameTex
             case SDL_MOUSEBUTTONDOWN:
                 if (event->button.button == SDL_BUTTON_LEFT && current_player->is_human) {
                     handle_game_mouse_button_down(renderer, textures, font, running, current_player, opponent);
-                }//end else if
+                }
                 break;
 
                 // Handle mouse button up event
             case SDL_MOUSEBUTTONUP:
                 if (event->button.button == SDL_BUTTON_LEFT) {
-                    handle_game_mouse_button_up(current_player, opponent, finish_turn_button, hover_save, hover_exit, running, ai_state);
-                }//end if
+                    handle_game_mouse_button_up(current_player, opponent, finish_turn_button, hover_save, hover_exit,
+                                                running, ai_state);
+                }
                 break;
-        }//end switch
-    }//end while
-}//end handle_game_screen_events
+        }
+    }
+}
 
 void shuffle_directions(int *dir_indices, int size) {
     // Shuffle the directions
@@ -2453,10 +2537,12 @@ void shuffle_directions(int *dir_indices, int size) {
         int temp = dir_indices[i];
         dir_indices[i] = dir_indices[j];
         dir_indices[j] = temp;
-    }//end for
-}//end shuffle_directions
+    }
+}
 
-void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent, AI_State *ai_state) {
+void
+handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Font *font, Player *computer, Player *opponent,
+                     AI_State *ai_state) {
     // Initialize static variables for AI's state
     static int min_gap = 1;
     static int attempts = 0;
@@ -2492,9 +2578,9 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                 remaining_cells[index][0] = x;
                 remaining_cells[index][1] = y;
                 index++;
-            }//end for
-        }//end for
-    }//end if
+            }
+        }
+    }
 
     do {
         // Handle AI states (SEARCH, TARGET, DESTROY)
@@ -2505,7 +2591,7 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                 if (hit_segments_count > 0) {
                     *ai_state = REVISIT;
                     goto REVISIT_CASE;
-                }//end if
+                }
 
                 // Reset variables
                 attempts = 0;
@@ -2541,38 +2627,33 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                             int x = cell_x + dx[i];
                             int y = cell_y + dy[i];
 
-                            // Check if the cell is within the board
-                            if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
-                                // Check if the cell has been hit before
-                                if (opponent->board.cells[x][y].hit) {
-                                    // Check if the cell meets the minimum gap requirement
-                                    if (opponent->board.cells[x][y].ship_index != -1) {
-                                        if (opponent->ships[opponent->board.cells[x][y].ship_index].size < min_gap) {
-                                            meets_gap_requirement = false;
-                                        }//end if
-                                    } else {
-                                        meets_gap_requirement = false;
-                                    }//end else
-                                }//end if
-                            }//end if
-                        }//end for
+                            // Check if the cell is within the board and hasn't been hit before
+                            if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) continue;
+                            if (!opponent->board.cells[x][y].hit) continue;
+                            // Check if the cell meets the minimum gap requirement
+                            if (opponent->board.cells[x][y].ship_index != -1) {
+                                if (opponent->ships[opponent->board.cells[x][y].ship_index].size >= min_gap) continue;
+                                meets_gap_requirement = false;
+                            } else {
+                                meets_gap_requirement = false;
+                            }
+                        }
 
                         if (meets_gap_requirement) {
                             valid_cell_found = true;
 
                             // Remove the cell from the remaining_cells array and decrease the remaining_cells_count
                             for (int i = 0; i < remaining_cells_count; i++) {
-                                if (remaining_cells[i][0] == cell_x && remaining_cells[i][1] == cell_y) {
-                                    remaining_cells[i][0] = remaining_cells[remaining_cells_count - 1][0];
-                                    remaining_cells[i][1] = remaining_cells[remaining_cells_count - 1][1];
-                                    remaining_cells_count--;
-                                    break;
-                                }//end if
-                            }//end for
-                        }//end if
-                    }//end if
+                                if (remaining_cells[i][0] != cell_x || remaining_cells[i][1] != cell_y) continue;
+                                remaining_cells[i][0] = remaining_cells[remaining_cells_count - 1][0];
+                                remaining_cells[i][1] = remaining_cells[remaining_cells_count - 1][1];
+                                remaining_cells_count--;
+                                break;
+                            }
+                        }
+                    }
                     search_attempts++;
-                }//end while
+                }
 
                 if (search_attempts == temp_remaining_cells_count) {
                     // If the AI can't find a valid cell to shoot, it will shoot randomly until it finds a valid cell
@@ -2582,12 +2663,11 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         cell_y = (int) pcg32_boundedrand(BOARD_SIZE);
 
                         // Check if the cell hasn't been hit before
-                        if (!opponent->board.cells[cell_x][cell_y].hit) {
-                            valid_cell_found = true;
-                        }//end if
+                        if (opponent->board.cells[cell_x][cell_y].hit) continue;
+                        valid_cell_found = true;
                     } while (!valid_cell_found);
                     printf("AI can't find a valid cell to shoot, shooting randomly\n");
-                }//end if
+                }
                 break;
 
             TARGET_CASE:
@@ -2608,35 +2688,36 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         if (direction_fully_explored && *ai_state == TARGET && attempts > 0) {
                             *ai_state = REVISIT;
                             goto REVISIT_CASE;
-                        }//end if
+                        }
 
                         // Check if the AI has not explored the other direction yet
                         if (is_revisit && attempts == 1 && !direction_fully_explored) {
                             // try the other direction
                             direction = (direction + 2) % 4;
                             direction_fully_explored = true;
-                        }//end if
+                        }
 
                         cell_x = last_hit_x + dx[direction];
                         cell_y = last_hit_y + dy[direction];
-                    }//end else
+                    }
 
                     // Check if the cell is within the board and hasn't been hit before
-                    if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE && !opponent->board.cells[cell_x][cell_y].hit) {
+                    if (cell_x >= 0 && cell_x < BOARD_SIZE && cell_y >= 0 && cell_y < BOARD_SIZE &&
+                        !opponent->board.cells[cell_x][cell_y].hit) {
                         valid_cell_found = true;
                     } else {
                         // Increment the attempt counter
                         attempts++;
 
-                        if (!direction_fully_explored && *ai_state == DESTROY) {
-                            // If the AI has found the orientation and can't explore further in the first direction, explore the other direction
-                            direction = (direction + 2) % 4;
-                            last_hit_x = initial_hit_x;
-                            last_hit_y = initial_hit_y;
-                            direction_fully_explored = true;
-                        }//end else
-                    }//end else
-                }//end while
+                        if (direction_fully_explored || *ai_state != DESTROY) continue;
+                        // If the AI has found the orientation and can't explore further in the first direction,
+                        // explore the other direction
+                        direction = (direction + 2) % 4;
+                        last_hit_x = initial_hit_x;
+                        last_hit_y = initial_hit_y;
+                        direction_fully_explored = true;
+                    }
+                }
 
                 // If no valid cell is found in TARGET or DESTROY state, switch back to SEARCH state
                 if (!valid_cell_found && (*ai_state == TARGET || *ai_state == DESTROY)) {
@@ -2645,16 +2726,15 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         attempts++; // Increment attempts count
 
                         // If all directions have been tried, switch back to SEARCH state
-                        if (attempts >= 4) {
-                            *ai_state = SEARCH;
-                            attempts = 0;
-                            direction = 0;
-                            last_hit_x = -1;
-                            last_hit_y = -1;
-                            initial_hit_x = -1;
-                            initial_hit_y = -1;
-                            direction_fully_explored = false;
-                        }//end if
+                        if (attempts < 4) continue;
+                        *ai_state = SEARCH;
+                        attempts = 0;
+                        direction = 0;
+                        last_hit_x = -1;
+                        last_hit_y = -1;
+                        initial_hit_x = -1;
+                        initial_hit_y = -1;
+                        direction_fully_explored = false;
                     } else { // *ai_state == DESTROY
                         *ai_state = SEARCH;
                         attempts = 0;
@@ -2664,9 +2744,9 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         initial_hit_x = -1;
                         initial_hit_y = -1;
                         direction_fully_explored = false;
-                    }//end else
+                    }
                     continue; // Continue with the next iteration of the do-while loop
-                }//end if
+                }
                 break;
 
             REVISIT_CASE:
@@ -2705,12 +2785,12 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                             dir_indices_revisit[1] = 2;
                             shuffle_directions(dir_indices_revisit, 2);
                             direction = dir_indices[0];
-                        }//end else
+                        }
                         first_revisit = false;
                     } else {
                         shuffle_directions(dir_indices_revisit, 2);
                         direction = dir_indices_revisit[0];
-                    }//end else
+                    }
 
                     // Update the AI state to TARGET
                     is_revisit = true;
@@ -2724,8 +2804,8 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     first_revisit = true;
                     *ai_state = SEARCH;
                     goto SEARCH_CASE;
-                }//end else
-        }//end switch
+                }
+        }
 
         // If the chosen cell hasn't been hit before
         if (!opponent->board.cells[cell_x][cell_y].hit) {
@@ -2750,10 +2830,10 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                         // Update the state to DESTROY
                         *ai_state = DESTROY;
                         attempts = 0;
-                    }//end if
+                    }
                     last_hit_x = cell_x;
                     last_hit_y = cell_y;
-                }//end else if
+                }
 
                 // If the ship is sunk, reset AI state to SEARCH, update destroyed_ships array and min gap
                 if (opponent->ships[ship_index].hit_count == opponent->ships[ship_index].size) {
@@ -2762,10 +2842,9 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     // Update min_gap when a ship is destroyed
                     int smallest_ship_remaining = BOARD_SIZE + 1;
                     for (int i = 0; i < NUM_SHIPS; i++) {
-                        if (!destroyed_ships[i] && opponent->ships[i].size < smallest_ship_remaining) {
-                            smallest_ship_remaining = opponent->ships[i].size;
-                        }//end if
-                    }//end for
+                        if (destroyed_ships[i] || opponent->ships[i].size >= smallest_ship_remaining) continue;
+                        smallest_ship_remaining = opponent->ships[i].size;
+                    }
                     min_gap = smallest_ship_remaining - 1;
 
                     if (!is_revisit) {
@@ -2774,9 +2853,9 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                             hit_segments[i][0] = -1;
                             hit_segments[i][1] = -1;
                             hit_segments_count = 0;
-                        }//end for
+                        }
                         direction = 0;
-                    }//end if
+                    }
 
                     // Reset AI state
                     *ai_state = SEARCH;
@@ -2792,7 +2871,7 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     hit_segments[hit_segments_count][0] = cell_x;
                     hit_segments[hit_segments_count][1] = cell_y;
                     hit_segments_count++;
-                }//end else if
+                }
 
                 // Render the game boards again
                 render_game_boards(renderer, textures, opponent, computer);
@@ -2809,8 +2888,8 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     last_hit_x = initial_hit_x;
                     last_hit_y = initial_hit_y;
                     direction_fully_explored = true;
-                }//end else if
-            }//end else
+                }
+            }
         } else {
             // If the shot was unsuccessful, update AI states
             if (*ai_state == TARGET) {
@@ -2825,28 +2904,29 @@ void handle_computer_turn(SDL_Renderer *renderer, GameTextures *textures, TTF_Fo
                     direction = (direction + 2) % 4; // Reverse direction
                     last_hit_x = initial_hit_x;
                     last_hit_y = initial_hit_y;
-                }//end else
-            }//end else if
-        }//end else
+                }
+            }
+        }
     } while (shot_successful && opponent->remaining_ships > 0);
 
     if (!has_shot) {
         printf("This should never happen\n");
-    }//end if
+    }
 
     // If all opponent's ships are sunk, show the winner message
     if (opponent->remaining_ships == 0) {
         show_winner_message(renderer, font, 2);
-    }//end if
+    }
 
     // Render the game boards one last time and wait for a second
     render_game_boards(renderer, textures, opponent, computer);
     render_remaining_ships_text(renderer, font, opponent, computer);
     SDL_RenderPresent(renderer);
     SDL_Delay(1000); // Delay for 1 second
-}//end handle_computer_turn
+}
 
-void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1, Player *player2, int *current_turn, AI_State *ai_state) {
+void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textures, TTF_Font *font, Player *player1,
+                 Player *player2, int *current_turn, AI_State *ai_state) {
     // Load background texture
     SDL_Texture *background_texture = IMG_LoadTexture(renderer, "Assets/game_screen_background.jpeg");
 
@@ -2892,13 +2972,13 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
             handle_computer_turn(renderer, textures, font, current_player, opponent, ai_state);
             if (opponent->remaining_ships == 0) {
                 break;
-            }//end if
+            }
             current_player->is_turn = !current_player->is_turn;
             opponent->is_turn = !opponent->is_turn;
         } else {
             // Render remaining ships text for both players
             render_remaining_ships_text(renderer, font, current_player, opponent);
-        }//end else
+        }
 
         // Get mouse position
         int mouse_x, mouse_y;
@@ -2918,8 +2998,8 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
             // Render the hover effect
             if (current_player->can_shoot) {
                 render_game_hover_effect(renderer, black_texture, cell_x, cell_y, opponent_board_x, opponent_board_y);
-            }//end if
-        }//end if
+            }
+        }
 
         // Check if the mouse is hovering over the save button
         hover_save = is_mouse_inside_button(mouse_x, mouse_y, save_button);
@@ -2928,12 +3008,14 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
         hover_exit = is_mouse_inside_button(mouse_x, mouse_y, exit_button);
 
         // Render the save button
-        SDL_Color save_button_color = hover_save ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
-        render_colored_text(renderer, "Save", font, save_button.x, save_button.y, save_button_color.r, save_button_color.g, save_button_color.b);
+        SDL_Color save_button_color = hover_save ? (SDL_Color) {255, 255, 0, 255} : (SDL_Color) {255, 255, 255, 255};
+        render_colored_text(renderer, "Save", font, save_button.x, save_button.y, save_button_color.r,
+                            save_button_color.g, save_button_color.b);
 
         // Render the exit button
-        SDL_Color exit_button_color = hover_exit ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
-        render_colored_text(renderer, "Exit", font, exit_button.x, exit_button.y, exit_button_color.r, exit_button_color.g, exit_button_color.b);
+        SDL_Color exit_button_color = hover_exit ? (SDL_Color) {255, 255, 0, 255} : (SDL_Color) {255, 255, 255, 255};
+        render_colored_text(renderer, "Exit", font, exit_button.x, exit_button.y, exit_button_color.r,
+                            exit_button_color.g, exit_button_color.b);
 
         // Check if the mouse is hovering over the exit button
         hover_exit = is_mouse_inside_button(mouse_x, mouse_y, exit_button);
@@ -2945,27 +3027,28 @@ void game_screen(SDL_Renderer *renderer, SDL_Window *window, GameTextures *textu
 
             // Render the "Finish turn" button
             render_finish_turn_button(renderer, font, finish_turn_button, hover_finish_turn);
-        }//end if
+        }
 
         // Update the screen
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / 60); // Limit frame rate to 60 FPS
 
         // Handle game screen events
-        handle_game_screen_events(&event, renderer, textures, font, current_player, opponent, &running, finish_turn_button, &hover_save, &hover_exit, ai_state);
+        handle_game_screen_events(&event, renderer, textures, font, current_player, opponent, &running,
+                                  finish_turn_button, &hover_save, &hover_exit, ai_state);
 
         // Change the current turn
         if (current_player->is_turn == false) {
             *current_turn = *current_turn == 1 ? 2 : 1;
             update_window_title(window, *current_turn);
-        }//end if
-    }//end while
+        }
+    }
 
     // Free resources
     SDL_FreeSurface(black_surface);
     SDL_DestroyTexture(black_texture);
     SDL_DestroyTexture(background_texture);
-}//end game_screen
+}
 
 void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL_Window *window) {
     free(textures);
@@ -2975,4 +3058,4 @@ void cleanup(GameTextures *textures, SDL_Renderer *renderer, TTF_Font *font, SDL
     SDL_Quit();
     TTF_CloseFont(font);
     TTF_Quit();
-}//end cleanup
+}
